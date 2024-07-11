@@ -1,0 +1,17 @@
+{
+  "type": "market:market",
+  "input": [
+    {
+      "count": 8,
+      "id": "minecraft:carrot"
+    },
+    {
+      "count": 4,
+      "id": "minecraft:beetroot"
+    }
+  ],
+  "output": {
+    "count": 2,
+    "id": "opolisutilities:b_bucks"
+  }
+}

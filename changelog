@@ -1,0 +1,58 @@
+Changelog BBL Smelting
+
+// TODO //
+// Add alloy mixer block
+// Add Alloy fluids
+//
+
+
+1.4.0
+
+Name changed to BBL Casting
+Moved to the opolis utilities fluid
+Fixed log spam about fluids not having the correct fluid states
+Fluid can now be added to the mod a lot quicker and easier
+Added Molten stone, glass, netherite, debris and quartz
+Added various recipes for creating and using the new fluids
+Controller will now output to adjacent mixers
+
+1.3.0
+
+Completely changed fluid rendering system which should improve performance
+Fixed screen causing fps drops when open to long
+
+new block Mixer;
+    allows the mixing of fluids to create alloys
+    has 6 tanks
+    only allows for one type of fluid per tank so you end up with 6 tanks filled with the same fluid
+    bucket work with the mixer, empty bucket will take from the output tank first
+    filled fluid bucket will fill the input tanks in order
+
+new recipe type "smelting:mixing" this is used for the mixer, uses between 2 and 6 fluids to create a new fluid
+
+New Fluids;
+    Molten Obsidian
+    Molten Steel
+    Molten Bronze
+
+ingots gem and dust can now be melted
+
+Solidifer now allows for more than one item per stack if it is not a mold item
+mold items do not take damage
+recipes that use non mold items will be consumed when used
+
+JEI now renders full fluid blocks with the amount shown when  hovered instead of a small amount of fluid
+
+1.2.0
+
+Added tags and loot tables
+Added addition information about tank placement in controller
+
+1.1.0
+
+Changed some textures, added new molds
+Added recipes for blocks, molds and moltens
+
+1.0.0
+
+Initial Release
