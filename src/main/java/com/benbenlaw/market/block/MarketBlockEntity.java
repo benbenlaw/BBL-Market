@@ -1,8 +1,12 @@
 package com.benbenlaw.market.block;
 
 import com.benbenlaw.market.Market;
+import com.benbenlaw.market.recipe.MarketRecipe;
 import com.benbenlaw.market.screen.MarketMenu;
+import com.benbenlaw.opolisutilities.block.entity.custom.DryingTableBlockEntity;
 import com.benbenlaw.opolisutilities.block.entity.custom.handler.InputOutputItemHandler;
+import com.benbenlaw.opolisutilities.recipe.DryingTableRecipe;
+import com.benbenlaw.opolisutilities.recipe.SoakingTableRecipe;
 import com.benbenlaw.opolisutilities.util.inventory.IInventoryHandlingBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -23,17 +27,23 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.neoforged.neoforge.common.crafting.SizedIngredient;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
     private final ItemStackHandler itemHandler = new ItemStackHandler(13) {
@@ -70,18 +80,18 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public int maxProgress = 220;
 
     public int LICENCE_SLOT = 0;
-  // INPUT_SLOTS= [1,2,3,4,5,6,7,8,9];
+    // INPUT_SLOTS= [1,2,3,4,5,6,7,8,9];
     public int OUTPUT_SLOT_1 = 10;
     public int OUTPUT_SLOT_2 = 11;
     public int OUTPUT_SLOT_3 = 12;
 
-    private final IItemHandler controllerItemHandler = new InputOutputItemHandler(itemHandler,
-            (i, stack) -> i != 13,
-            i -> i == 1
+    private final IItemHandler marketItemHandler = new InputOutputItemHandler(itemHandler,
+            (i, stack) -> i >= 1 && i <= 9,
+            i -> i >= 10 && i <= 12
     );
 
     public @Nullable IItemHandler getItemHandlerCapability(@Nullable Direction side) {
-        return controllerItemHandler;
+        return marketItemHandler;
     }
 
     public void setHandler(ItemStackHandler handler) {
@@ -184,9 +194,98 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         assert this.level != null;
         Containers.dropContents(this.level, this.worldPosition, inventory);
     }
+
     public void tick() {
-    //    sync();
+
+        assert level != null;
+        if (!level.isClientSide()) {
+            sync();
+
+            RecipeInput inventory = new RecipeInput() {
+                @Override
+                public @NotNull ItemStack getItem(int index) {
+                    return itemHandler.getStackInSlot(index);
+                }
+
+                @Override
+                public int size() {
+                    return itemHandler.getSlots();
+                }
+            };
+
+            Optional<RecipeHolder<MarketRecipe>> match = level.getRecipeManager()
+                    .getRecipeFor(MarketRecipe.Type.INSTANCE, inventory, level);
+
+            if (match.isPresent()) {
+                if (canInsertItemIntoOutputSlot(inventory, match.get().value().output()) &&
+                        hasOutputSpace(this, match.get().value()) &&
+                        hasLicence(this, match.get().value())) {
+
+                    ItemStack output = match.get().value().output();
+                    SizedIngredient input = match.get().value().input();
+
+                    for (int i = 10; i <= 12; i++) {
+                        ItemStack slotStack = itemHandler.getStackInSlot(i);
+                        if (slotStack.isEmpty()) {
+                            itemHandler.setStackInSlot(i, new ItemStack(output.getItem(), output.getCount()));
+                            break;
+                        } else if (slotStack.getItem() == output.getItem()) {
+                            int newCount = slotStack.getCount() + output.getCount();
+                            if (newCount <= slotStack.getMaxStackSize()) {
+                                slotStack.setCount(newCount);
+                                itemHandler.setStackInSlot(i, slotStack);
+                                break;
+                            }
+                        }
+                    }
+
+                    for (int i = 1; i <= 9; i++) {
+                        ItemStack slotStack = itemHandler.getStackInSlot(i);
+                        if (!slotStack.isEmpty() && input.test(slotStack)) {
+                            slotStack.shrink(input.count());
+                            break;
+                        }
+
+                    }
+
+
+
+                    sync();
+                }
+            }
+        }
     }
 
+    private boolean canInsertItemIntoOutputSlot(RecipeInput inventory, ItemStack output) {
+        for (int i = 10; i <= 12; i++) {
+            ItemStack slotStack = inventory.getItem(i);
+            if (slotStack.isEmpty() || (slotStack.getItem() == output.getItem() && slotStack.getCount() + output.getCount() <= slotStack.getMaxStackSize())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    private boolean hasOutputSpace(MarketBlockEntity entity, MarketRecipe recipe) {
+        ItemStack resultStack = recipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess());
+
+        for (int i = 10; i <= 12; i++) {
+            ItemStack outputSlotStack = entity.itemHandler.getStackInSlot(i);
+            if (outputSlotStack.isEmpty()) {
+                if (resultStack.getCount() <= resultStack.getMaxStackSize()) {
+                    return true;
+                }
+            } else if (outputSlotStack.getItem() == resultStack.getItem()) {
+                if (outputSlotStack.getCount() + resultStack.getCount() <= outputSlotStack.getMaxStackSize()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean hasLicence(MarketBlockEntity entity, MarketRecipe recipe) {
+        Ingredient licence = recipe.license();
+        return licence.test(entity.itemHandler.getStackInSlot(LICENCE_SLOT));
+    }
 }

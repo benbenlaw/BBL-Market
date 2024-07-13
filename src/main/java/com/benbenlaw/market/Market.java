@@ -3,6 +3,7 @@ package com.benbenlaw.market;
 import com.benbenlaw.market.block.ModBlockEntities;
 import com.benbenlaw.market.block.ModBlocks;
 import com.benbenlaw.market.item.ModItems;
+import com.benbenlaw.market.recipe.ModRecipes;
 import com.benbenlaw.market.screen.MarketScreen;
 import com.benbenlaw.market.screen.ModMenuTypes;
 import com.mojang.logging.LogUtils;
@@ -30,7 +31,7 @@ public class Market {
         modEventBus.addListener(this::registerCapabilities);
         ModMenuTypes.register(modEventBus);
         ModBlockEntities.register(modEventBus);
-    //    ModRecipes.register(modEventBus);
+        ModRecipes.register(modEventBus);
     //
     //    modEventBus.addListener(this::commonSetup);
 

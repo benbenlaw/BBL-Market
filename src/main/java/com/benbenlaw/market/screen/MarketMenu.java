@@ -2,6 +2,7 @@ package com.benbenlaw.market.screen;
 
 import com.benbenlaw.market.block.MarketBlockEntity;
 import com.benbenlaw.market.block.ModBlocks;
+import com.benbenlaw.opolisutilities.screen.slot.utils.ModResultSlot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -49,9 +50,9 @@ public class MarketMenu extends AbstractContainerMenu {
         this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 8, 27, 54));
         this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 9, 46, 54));
 
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 10, 153, 24));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 11, 153, 43));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 12, 153, 62));
+        this.addSlot(new ModResultSlot(blockEntity.getItemStackHandler(), 10, 153, 24));
+        this.addSlot(new ModResultSlot(blockEntity.getItemStackHandler(), 11, 153, 43));
+        this.addSlot(new ModResultSlot(blockEntity.getItemStackHandler(), 12, 153, 62));
 
         addDataSlots(data);
 
