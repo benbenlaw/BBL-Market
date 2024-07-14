@@ -78,7 +78,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public int orderVariation;
     public int orderTimeRemaining;
     public boolean needNewRecipe = true;
-    public boolean onCooldown = false;
+    public boolean onCooldown;
     public int cooldownTimer;
 
     public int LICENCE_SLOT = 0;
@@ -176,6 +176,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         compoundTag.put("inventory", this.itemHandler.serializeNBT(provider));
         compoundTag.putInt("progress", progress);
         compoundTag.putInt("maxProgress", maxProgress);
+        compoundTag.putBoolean("onCooldown", onCooldown);
 
 
     }
@@ -185,6 +186,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         this.itemHandler.deserializeNBT(provider, compoundTag.getCompound("inventory"));
         progress = compoundTag.getInt("progress");
         maxProgress = compoundTag.getInt("maxProgress");
+        onCooldown = compoundTag.getBoolean("onCooldown");
         super.loadAdditional(compoundTag, provider);
     }
 
@@ -202,6 +204,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         assert level != null;
         if (!level.isClientSide()) {
             sync();
+            System.out.println(onCooldown);
+
 
             RecipeInput inventory = new RecipeInput() {
                 @Override
@@ -233,7 +237,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     System.out.println("Variation is " + orderVariation);
                     System.out.println("Expected input size is " + (orderVariation + currentRecipe.input().count()));
 
-                    orderTimeRemaining = 600;
+                    orderTimeRemaining = 30;
                     //30 seconds default, this can be changed to be in the recipe later on if we want more control over it
                 }
 
@@ -290,12 +294,11 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 orderTimeRemaining--;
                 if (orderTimeRemaining == 0) {
                     onCooldown = true;
-                    cooldownTimer = 30;
+                    cooldownTimer = 600;
                     return;
                 }
             }
 
-            sync();
 
             /*
             Optional<RecipeHolder<MarketRecipe>> match = level.getRecipeManager()

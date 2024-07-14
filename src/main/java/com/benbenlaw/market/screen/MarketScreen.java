@@ -39,6 +39,7 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         int y = (height - imageHeight) / 2;
 
         guiGraphics.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight);
+
     }
 
     @Override
@@ -50,9 +51,18 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderProgressBars(guiGraphics);
         renderTooltip(guiGraphics, mouseX, mouseY);
-        if (menu.blockEntity.onCooldown) {
+        renderCooldown(guiGraphics, mouseX, mouseY, x, y);
+
+    }
+
+
+    private void renderCooldown(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
+
+
+        if (this.menu.blockEntity.onCooldown == true) {
             guiGraphics.drawCenteredString(this.font, "On cooldown!", x+107, y+10, 1);
-        } else {
+        }
+        else if (!this.menu.blockEntity.onCooldown) {
             guiGraphics.drawCenteredString(this.font, "Not on cooldown", x+107, y+10, 1);
         }
 
