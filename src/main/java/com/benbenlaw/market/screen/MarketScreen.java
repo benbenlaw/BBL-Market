@@ -1,14 +1,25 @@
 package com.benbenlaw.market.screen;
 
 import com.benbenlaw.market.Market;
+import com.benbenlaw.market.recipe.MarketRecipe;
+import com.benbenlaw.opolisutilities.util.MouseUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.common.crafting.SizedIngredient;
+
+import java.util.Optional;
 
 public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
 
@@ -52,21 +63,63 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         renderProgressBars(guiGraphics);
         renderTooltip(guiGraphics, mouseX, mouseY);
         renderCooldown(guiGraphics, mouseX, mouseY, x, y);
+        renderCurrentRecipeInformationAboveArea(guiGraphics, mouseX, mouseY, x, y);
 
     }
-
 
     private void renderCooldown(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
 
+        if (this.menu.blockEntity.onCooldown) {
+            guiGraphics.drawString(this.font, "On cooldown!", x + 69, y+ 45,
+                    0x3F3F3F, false);
+            guiGraphics.drawString(this.font, "Remaining: " + this.menu.blockEntity.cooldownTimer, x+ 69, y+ 56,
+                    0x3F3F3F, false);
 
-        if (this.menu.blockEntity.onCooldown == true) {
-            guiGraphics.drawCenteredString(this.font, "On cooldown!", x+107, y+10, 1);
+            guiGraphics.renderFakeItem(new ItemStack(Items.BARRIER), x + 76, y + 16);
+
         }
-        else if (!this.menu.blockEntity.onCooldown) {
-            guiGraphics.drawCenteredString(this.font, "Not on cooldown", x+107, y+10, 1);
+        else {
+
+            //TODO - replace this
+            /*
+            guiGraphics.drawString(this.font, "Not on cooldown", x + 69, y + 45,
+                    0x3F3F3F, false);
+            */
+
+            if (this.menu.blockEntity.recipeID != null) {
+
+                Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
+
+                if (recipe.isPresent()) {
+                    MarketRecipe r = (MarketRecipe) recipe.get().value();
+
+                    //Render Input
+                    ItemStack itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
+                    guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
+                    guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
+
+                    //Render Output
+                    ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
+                    guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
+                    guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
+
+
+
+                }
+            }
+        }
+    }
+
+    private void renderCurrentRecipeInformationAboveArea(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
+
+        if (MouseUtil.isMouseAboveArea(mouseX, mouseY, x, y, 75, 15, 67, 16)) {
+            guiGraphics.renderTooltip(this.font, Component.literal("Current Demand"), mouseX, mouseY);
+
         }
 
     }
+
+
 
     private void renderProgressBars(GuiGraphics guiGraphics) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);

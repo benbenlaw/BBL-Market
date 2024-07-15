@@ -6,6 +6,7 @@ import com.benbenlaw.opolisutilities.block.entity.custom.handler.InputOutputItem
 import com.benbenlaw.opolisutilities.util.inventory.IInventoryHandlingBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
@@ -13,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -74,7 +76,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public int progress = 0;
     public int maxProgress = 220;
 
-    public MarketRecipe currentRecipe;
+    public RecipeHolder<MarketRecipe> currentRecipe;
+
+    public ResourceLocation recipeID = ResourceLocation.parse("market:null");
     public int orderVariation;
     public int orderTimeRemaining;
     public boolean needNewRecipe = true;
@@ -177,7 +181,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         compoundTag.putInt("progress", progress);
         compoundTag.putInt("maxProgress", maxProgress);
         compoundTag.putBoolean("onCooldown", onCooldown);
-
+        compoundTag.putInt("cooldownTimer", cooldownTimer);
+        compoundTag.putString("recipeID", this.recipeID.toString());
+        compoundTag.putInt("orderVariation", orderVariation);
 
     }
 
@@ -187,6 +193,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         progress = compoundTag.getInt("progress");
         maxProgress = compoundTag.getInt("maxProgress");
         onCooldown = compoundTag.getBoolean("onCooldown");
+        cooldownTimer = compoundTag.getInt("cooldownTimer");
+        this.recipeID = ResourceLocation.parse(compoundTag.getString("recipeID"));
+        orderVariation = compoundTag.getInt("orderVariation");
         super.loadAdditional(compoundTag, provider);
     }
 
@@ -219,21 +228,16 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             };
 
 
-
             if (!onCooldown) {
                 if (needNewRecipe && hasValidLicense()) {
                     RandomSource random = RandomSource.create();
                     //getRandomRecipe crashes if an invalid item is in the license slot. Don't call it without calling hasValidLicense first
                     currentRecipe = getRandomRecipe(random);
-
-                    System.out.println("Recipe selected: " + currentRecipe.input().getItems()[0].toString() + " for " + currentRecipe.output().toString());
+                    recipeID = ResourceLocation.parse(currentRecipe.toString());
 
                     needNewRecipe = false;
-                    int variation = currentRecipe.variation();
+                    int variation = currentRecipe.value().variation();
                     orderVariation = random.nextIntBetweenInclusive(-variation, variation);
-
-                    System.out.println("Variation is " + orderVariation);
-                    System.out.println("Expected input size is " + (orderVariation + currentRecipe.input().count()));
 
                     orderTimeRemaining = 600;
                     //30 seconds default, this can be changed to be in the recipe later on if we want more control over it
@@ -248,10 +252,10 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                         ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
                         //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
                         inputStack.setCount(inputStack.getCount() - orderVariation);
-                        if (currentRecipe.input().test(inputStack)) {
-                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.output()) && hasOutputSpace(this, currentRecipe)) {
+                        if (currentRecipe.value().input().test(inputStack)) {
+                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
 
-                                itemHandler.getStackInSlot(i).shrink(currentRecipe.input().count() + orderVariation);
+                                itemHandler.getStackInSlot(i).shrink(currentRecipe.value().input().count() + orderVariation);
                                 needNewRecipe = true;
                                 //This allows a new order to be completed every single tick, maybe add some sort of
                                 //additional cooldown between orders to slow things down a little?
@@ -260,10 +264,10 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                                 for (int k = 10; k <= 12; k++) {
                                     ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
                                     if (slotStack.isEmpty()) {
-                                        itemHandler.setStackInSlot(k, currentRecipe.output());
+                                        itemHandler.setStackInSlot(k, currentRecipe.value().output());
                                         break;
-                                    } else if (slotStack.getItem() == currentRecipe.output().getItem()) {
-                                        int newCount = slotStack.getCount() + currentRecipe.output().getCount();
+                                    } else if (slotStack.getItem() == currentRecipe.value().output().getItem()) {
+                                        int newCount = slotStack.getCount() + currentRecipe.value().output().getCount();
                                         if (newCount <= slotStack.getMaxStackSize()) {
                                             slotStack.setCount(newCount);
                                             itemHandler.setStackInSlot(k, slotStack);
@@ -293,49 +297,6 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             }
 
-
-            /*
-            Optional<RecipeHolder<MarketRecipe>> match = level.getRecipeManager()
-                    .getRecipeFor(MarketRecipe.Type.INSTANCE, inventory, level);*/
-
-            /*
-            if (match.isPresent()) {
-                if (canInsertItemIntoOutputSlot(inventory, match.get().value().output()) &&
-                        hasOutputSpace(this, match.get().value()) &&
-                        hasLicence(this, match.get().value())) {
-
-                    ItemStack output = match.get().value().output();
-                    SizedIngredient input = match.get().value().input();
-
-                    for (int i = 10; i <= 12; i++) {
-                        ItemStack slotStack = itemHandler.getStackInSlot(i);
-                        if (slotStack.isEmpty()) {
-                            itemHandler.setStackInSlot(i, new ItemStack(output.getItem(), output.getCount()));
-                            break;
-                        } else if (slotStack.getItem() == output.getItem()) {
-                            int newCount = slotStack.getCount() + output.getCount();
-                            if (newCount <= slotStack.getMaxStackSize()) {
-                                slotStack.setCount(newCount);
-                                itemHandler.setStackInSlot(i, slotStack);
-                                break;
-                            }
-                        }
-                    }
-
-                    for (int i = 1; i <= 9; i++) {
-                        ItemStack slotStack = itemHandler.getStackInSlot(i);
-                        if (!slotStack.isEmpty() && input.test(slotStack)) {
-                            slotStack.shrink(input.count());
-                            break;
-                        }
-
-                    }
-
-
-
-                    sync();
-                }
-            }*/
         }
     }
 
@@ -386,22 +347,24 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         return false;
     }
 
-    private MarketRecipe getRandomRecipe(RandomSource random) {
-        //Get all market recipes
+    private RecipeHolder<MarketRecipe> getRandomRecipe(RandomSource random) {
+        // Get all market recipes
         List<RecipeHolder<MarketRecipe>> recipes = level.getRecipeManager().getAllRecipesFor(MarketRecipe.Type.INSTANCE);
 
-        //getAllRecipesFor returns an immutable list, so make a new mutable list
-        List<MarketRecipe> availableRecipes = new ArrayList<>();
+        // getAllRecipesFor returns an immutable list, so make a new mutable list
+        List<RecipeHolder<MarketRecipe>> availableRecipes = new ArrayList<>();
 
-        //Filter them so that only those whose license item matches the license item in the block remain
+        // Filter them so that only those whose license item matches the license item in the block remain
         for (int i = recipes.size() - 1; i >= 0; i--) {
             if (recipes.get(i).value().license().test(itemHandler.getStackInSlot(LICENCE_SLOT))) {
-                availableRecipes.add(recipes.get(i).value());
+                availableRecipes.add(recipes.get(i));
             }
         }
 
-        //Pick a random recipe from the remaining list
+        // Pick a random recipe from the remaining list
         int index = random.nextIntBetweenInclusive(0, availableRecipes.size() - 1);
         return availableRecipes.get(index);
     }
+
+
 }
