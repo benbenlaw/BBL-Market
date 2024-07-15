@@ -50,7 +50,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
         @Override
         protected int getStackLimit(int slot, ItemStack stack) {
-            if(slot == LICENCE_SLOT) {
+            if (slot == LICENCE_SLOT) {
                 return 1;
             }
             return super.getStackLimit(slot, stack);
@@ -204,7 +204,6 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         assert level != null;
         if (!level.isClientSide()) {
             sync();
-            System.out.println(onCooldown);
 
 
             RecipeInput inventory = new RecipeInput() {
@@ -224,8 +223,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             if (!onCooldown) {
                 if (needNewRecipe && hasValidLicense()) {
                     RandomSource random = RandomSource.create();
-                    //getRandomRecipe will probably crash if a non-license item is put in.
-                    //I'll fix it just...don't do that for now
+                    //getRandomRecipe crashes if an invalid item is in the license slot. Don't call it without calling hasValidLicense first
                     currentRecipe = getRandomRecipe(random);
 
                     System.out.println("Recipe selected: " + currentRecipe.input().getItems()[0].toString() + " for " + currentRecipe.output().toString());
@@ -237,7 +235,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     System.out.println("Variation is " + orderVariation);
                     System.out.println("Expected input size is " + (orderVariation + currentRecipe.input().count()));
 
-                    orderTimeRemaining = 30;
+                    orderTimeRemaining = 600;
                     //30 seconds default, this can be changed to be in the recipe later on if we want more control over it
                 }
 
@@ -251,10 +249,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                         //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
                         inputStack.setCount(inputStack.getCount() - orderVariation);
                         if (currentRecipe.input().test(inputStack)) {
-                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.output()) &&
-                                    hasOutputSpace(this, currentRecipe) /*&&
-                                    //I don't think hasLicense is needed any
-                                    hasLicence(this, currentRecipe)*/) {
+                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.output()) && hasOutputSpace(this, currentRecipe)) {
 
                                 itemHandler.getStackInSlot(i).shrink(currentRecipe.input().count() + orderVariation);
                                 needNewRecipe = true;
@@ -263,9 +258,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
                                 //Recipe executing logic. You wrote this, thanks :)
                                 for (int k = 10; k <= 12; k++) {
-                                    ItemStack slotStack = itemHandler.getStackInSlot(k);
+                                    ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
                                     if (slotStack.isEmpty()) {
-                                        //For some reason during testing I got a carrot order that paid 4 bucks instead of 2 and another that paid nothing. Will continue testing
                                         itemHandler.setStackInSlot(k, currentRecipe.output());
                                         break;
                                     } else if (slotStack.getItem() == currentRecipe.output().getItem()) {
@@ -295,7 +289,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 if (orderTimeRemaining == 0) {
                     onCooldown = true;
                     cooldownTimer = 600;
-                    return;
+                    System.out.println("Going on cooldown");
                 }
             }
 
