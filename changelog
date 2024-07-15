@@ -1,5 +1,18 @@
 Changelog BBL Market
 
+1.0.2
+
+Updated text for cooldown timer and order timer
+Converted both timers from ticks to seconds
+Added orderTimeRemaining to market block data
+Fixed order timers pausing if the license item is removed
+Fixed cooldown end causing the order timer to go negative
+Removed needless conditional from renderCooldown in MarketScreen
+
+Known Issues
+Orders still don't translate between world loads, currentRecipe is not set in loadAdditional
+
+
 1.0.1
 
 Implemented JEI support

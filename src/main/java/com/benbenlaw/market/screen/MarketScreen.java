@@ -72,7 +72,7 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         if (this.menu.blockEntity.onCooldown) {
             guiGraphics.drawString(this.font, "On cooldown!", x + 69, y+ 45,
                     0x3F3F3F, false);
-            guiGraphics.drawString(this.font, "Remaining: " + this.menu.blockEntity.cooldownTimer, x+ 69, y+ 56,
+            guiGraphics.drawString(this.font, "Time left: " + (this.menu.blockEntity.cooldownTimer / 20) + "s", x+ 69, y+ 56,
                     0x3F3F3F, false);
 
             guiGraphics.renderFakeItem(new ItemStack(Items.BARRIER), x + 76, y + 16);
@@ -80,33 +80,26 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         }
         else {
 
-            //TODO - replace this
-            /*
-            guiGraphics.drawString(this.font, "Not on cooldown", x + 69, y + 45,
-                    0x3F3F3F, false);
-            */
+            Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
 
-            if (this.menu.blockEntity.recipeID != null) {
+            if (recipe.isPresent()) {
+                guiGraphics.drawString(this.font, "Time left: " + (this.menu.blockEntity.orderTimeRemaining / 20) + "s", x + 69, y + 45, 0x3F3F3F, false);
+                MarketRecipe r = (MarketRecipe) recipe.get().value();
 
-                Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
+                //Render Input
+                ItemStack itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
+                guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
+                guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
 
-                if (recipe.isPresent()) {
-                    MarketRecipe r = (MarketRecipe) recipe.get().value();
-
-                    //Render Input
-                    ItemStack itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
-                    guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
-                    guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
-
-                    //Render Output
-                    ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
-                    guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
-                    guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
+                //Render Output
+                ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
+                guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
+                guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
 
 
 
-                }
             }
+
         }
     }
 

@@ -41,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
     private final ItemStackHandler itemHandler = new ItemStackHandler(13) {
@@ -184,6 +185,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         compoundTag.putInt("cooldownTimer", cooldownTimer);
         compoundTag.putString("recipeID", this.recipeID.toString());
         compoundTag.putInt("orderVariation", orderVariation);
+        compoundTag.putInt("orderTimeRemaining", orderTimeRemaining);
 
     }
 
@@ -196,6 +198,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         cooldownTimer = compoundTag.getInt("cooldownTimer");
         this.recipeID = ResourceLocation.parse(compoundTag.getString("recipeID"));
         orderVariation = compoundTag.getInt("orderVariation");
+        orderTimeRemaining = compoundTag.getInt("orderTimeRemaining");
         super.loadAdditional(compoundTag, provider);
     }
 
@@ -288,12 +291,12 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     onCooldown = false;
                     needNewRecipe = true;
                 }
-            } else if (!itemHandler.getStackInSlot(LICENCE_SLOT).isEmpty()) { //Checking the license slot prevents it from going on cooldown as soon as it's placed
+            } else if (recipeID != ResourceLocation.parse("market:null")) { //Checking the license slot prevents it from going on cooldown as soon as it's placed
                 orderTimeRemaining--;
-                if (orderTimeRemaining == 0) {
+                if (orderTimeRemaining <= 0) {
                     onCooldown = true;
                     cooldownTimer = 600;
-                    System.out.println("Going on cooldown");
+                    recipeID = ResourceLocation.parse("market:null");
                 }
             }
 
