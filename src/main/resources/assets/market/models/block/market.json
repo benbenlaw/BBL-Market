@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "market:block/market_front",
+    "side": "opolisutilities:block/machine_side",
+    "top": "opolisutilities:block/machine_top"
+  }
+}

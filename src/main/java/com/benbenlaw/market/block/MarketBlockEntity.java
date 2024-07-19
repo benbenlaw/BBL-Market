@@ -2,8 +2,10 @@ package com.benbenlaw.market.block;
 
 import com.benbenlaw.market.recipe.MarketRecipe;
 import com.benbenlaw.market.screen.MarketMenu;
+import com.benbenlaw.market.utils.ModTags;
 import com.benbenlaw.opolisutilities.block.entity.custom.handler.InputOutputItemHandler;
 import com.benbenlaw.opolisutilities.util.inventory.IInventoryHandlingBlockEntity;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -33,15 +35,13 @@ import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
     private final ItemStackHandler itemHandler = new ItemStackHandler(13) {
@@ -59,6 +59,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             return super.getStackLimit(slot, stack);
         }
     };
+
+    private FakePlayer fakePlayer;
 
     public void sync() {
         if (level instanceof ServerLevel serverLevel) {
@@ -93,9 +95,18 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public int OUTPUT_SLOT_3 = 12;
 
     private final IItemHandler marketItemHandler = new InputOutputItemHandler(itemHandler,
-            (i, stack) -> i >= 1 && i <= 9,
+            (i, stack) -> {
+                if (i >= 1 && i <= 9) {
+                    return !stack.getItem().asItem().getDefaultInstance().is(ModTags.LICENSES);
+                }
+                if (i == 0) {
+                    return stack.getItem().asItem().getDefaultInstance().is(ModTags.LICENSES);
+                }
+                return false;
+            },
             i -> i >= 10 && i <= 12
     );
+
 
     public @Nullable IItemHandler getItemHandlerCapability(@Nullable Direction side) {
         return marketItemHandler;
@@ -217,6 +228,10 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         if (!level.isClientSide()) {
             sync();
 
+            if (this.fakePlayer == null && level instanceof ServerLevel serverLevel) {
+                this.fakePlayer = createFakePlayer(serverLevel);
+            }
+
 
             RecipeInput inventory = new RecipeInput() {
                 @Override
@@ -260,6 +275,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
                                 itemHandler.getStackInSlot(i).shrink(currentRecipe.value().input().count() + orderVariation);
                                 needNewRecipe = true;
+                                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
                                 //This allows a new order to be completed every single tick, maybe add some sort of
                                 //additional cooldown between orders to slow things down a little?
 
@@ -369,5 +385,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         return availableRecipes.get(index);
     }
 
+    private FakePlayer createFakePlayer(ServerLevel level) {
+        return new FakePlayer(level, new GameProfile(UUID.randomUUID(), "Market"));
+    }
 
 }

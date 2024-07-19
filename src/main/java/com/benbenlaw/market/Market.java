@@ -6,14 +6,19 @@ import com.benbenlaw.market.item.ModItems;
 import com.benbenlaw.market.recipe.ModRecipes;
 import com.benbenlaw.market.screen.MarketScreen;
 import com.benbenlaw.market.screen.ModMenuTypes;
+import com.benbenlaw.opolisutilities.item.ModCreativeTab;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.Registry;
+import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.client.CreativeModeTabSearchRegistry;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
 
@@ -33,7 +38,7 @@ public class Market {
         ModBlockEntities.register(modEventBus);
         ModRecipes.register(modEventBus);
     //
-    //    modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::addItemToCreativeTab);
 
     }
 
@@ -42,7 +47,18 @@ public class Market {
     }
 
     public void commonSetup(RegisterPayloadHandlersEvent event) {
+
     }
+
+    private void addItemToCreativeTab(BuildCreativeModeTabContentsEvent event) {
+
+        if (event.getTabKey() == ModCreativeTab.OPOLIS_UTILITIES_TAB.getKey()) {
+            event.accept(ModBlocks.MARKET.get());
+        }
+    }
+
+
+
 
     @EventBusSubscriber(modid = Market.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {

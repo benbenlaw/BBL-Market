@@ -2,7 +2,10 @@ package com.benbenlaw.market.screen;
 
 import com.benbenlaw.market.block.MarketBlockEntity;
 import com.benbenlaw.market.block.ModBlocks;
+import com.benbenlaw.market.utils.ModTags;
+import com.benbenlaw.opolisutilities.screen.slot.utils.BlacklistTagInputSlot;
 import com.benbenlaw.opolisutilities.screen.slot.utils.ModResultSlot;
+import com.benbenlaw.opolisutilities.screen.slot.utils.WhitelistTagInputSlot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -38,17 +41,17 @@ public class MarketMenu extends AbstractContainerMenu {
         addPlayerInventory(inventory);
         addPlayerHotbar(inventory);
 
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 0, 153, 5));
+        this.addSlot(new WhitelistTagInputSlot(blockEntity.getItemStackHandler(), 0, 153, 5, ModTags.LICENSES, 64));
 
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 1, 8, 16));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 2, 27, 16));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 3, 46, 16));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 4, 8, 35));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 5, 27, 35));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 6, 46, 35));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 7, 8, 54));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 8, 27, 54));
-        this.addSlot(new SlotItemHandler(blockEntity.getItemStackHandler(), 9, 46, 54));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 1, 8, 16, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 2, 27, 16, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 3, 46, 16, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 4, 8, 35, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 5, 27, 35, ModTags.LICENSES, 64));;
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 6, 46, 35, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 7, 8, 54, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 8, 27, 54, ModTags.LICENSES, 64));
+        this.addSlot(new BlacklistTagInputSlot(blockEntity.getItemStackHandler(), 9, 46, 54, ModTags.LICENSES, 64));
 
         this.addSlot(new ModResultSlot(blockEntity.getItemStackHandler(), 10, 153, 24));
         this.addSlot(new ModResultSlot(blockEntity.getItemStackHandler(), 11, 153, 43));

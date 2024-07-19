@@ -1,5 +1,15 @@
 Changelog BBL Market
 
+1.0.3
+
+Added "market:license" tag mainly used to prevent incorrect items going into the license slots
+Added wip market block texture
+Added loot table, models and blockstate for the market block
+Allowed inputting of licences via hoppers
+Items that are used as licenses are now damaged when a recipe is completed#
+Added the market to the opolis utilities creative tab
+
+
 1.0.2
 
 Updated text for cooldown timer and order timer
