@@ -19,6 +19,7 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.crafting.SizedIngredient;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
@@ -87,7 +88,18 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
                 MarketRecipe r = (MarketRecipe) recipe.get().value();
 
                 //Render Input
-                ItemStack itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
+
+                ItemStack itemInput;
+
+                if (r.inputWithNbt().getItem() != ItemStack.EMPTY.getItem()) {
+                    itemInput = new ItemStack (r.inputWithNbt().getItem(), r.inputWithNbt().getCount() + this.menu.blockEntity.orderVariation);
+                    itemInput.applyComponents(r.inputWithNbt().getComponents());
+                } else {
+                    itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
+                }
+
+
+
                 guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
                 guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
 

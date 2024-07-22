@@ -1,15 +1,15 @@
 {
   "type": "market:market",
   "input": {
-    "count": 8,
-    "item": "minecraft:carrot"
+    "count": 5,
+    "item": "minecraft:apple"
   },
   "output": {
-    "count": 2,
+    "count": 5,
     "id": "opolisutilities:b_bucks"
   },
   "license": {
     "item": "minecraft:paper"
   },
-  "variation": 3
+  "variation": 4
 }

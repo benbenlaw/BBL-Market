@@ -10,6 +10,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
@@ -265,12 +267,23 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     return;
                 }
 
-                for (int i = 0; i < 10; i++) {
+                for (int i = 1; i < 10; i++) {
                     if (!itemHandler.getStackInSlot(i).isEmpty()) {
                         ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
                         //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
                         inputStack.setCount(inputStack.getCount() - orderVariation);
-                        if (currentRecipe.value().input().test(inputStack)) {
+
+                        DataComponentMap dataComponentMapInput = inputStack.getComponents();
+                        DataComponentMap dataComponentMapRecipe = currentRecipe.value().inputWithNbt().getComponents();
+
+                        DataComponentMap dataComponentMapRecipeOutput = currentRecipe.value().output().getComponents();
+                        ItemStack output = currentRecipe.value().output();
+                        output.applyComponents(dataComponentMapRecipeOutput);
+
+                        boolean isDataMapEqual = dataComponentMapInput.equals(dataComponentMapRecipe);
+
+
+                        if (currentRecipe.value().input().test(inputStack) && !isDataMapEqual) {
                             if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
 
                                 itemHandler.getStackInSlot(i).shrink(currentRecipe.value().input().count() + orderVariation);
@@ -283,10 +296,39 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                                 for (int k = 10; k <= 12; k++) {
                                     ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
                                     if (slotStack.isEmpty()) {
-                                        itemHandler.setStackInSlot(k, currentRecipe.value().output());
+                                        itemHandler.setStackInSlot(k, output);
                                         break;
-                                    } else if (slotStack.getItem() == currentRecipe.value().output().getItem()) {
-                                        int newCount = slotStack.getCount() + currentRecipe.value().output().getCount();
+                                    } else if (slotStack.getItem() == output.getItem()) {
+                                        int newCount = slotStack.getCount() + output.getCount();
+                                        if (newCount <= slotStack.getMaxStackSize()) {
+                                            slotStack.setCount(newCount);
+                                            itemHandler.setStackInSlot(k, slotStack);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+
+                        else if (isDataMapEqual) {
+                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
+
+                                itemHandler.getStackInSlot(i).shrink(currentRecipe.value().inputWithNbt().getCount() + orderVariation);
+                                needNewRecipe = true;
+                                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
+                                //This allows a new order to be completed every single tick, maybe add some sort of
+                                //additional cooldown between orders to slow things down a little?
+
+                                //Recipe executing logic. You wrote this, thanks :)
+                                for (int k = 10; k <= 12; k++) {
+                                    ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
+                                    if (slotStack.isEmpty()) {
+                                        itemHandler.setStackInSlot(k, output);
+                                        break;
+                                    } else if (slotStack.getItem() == output.getItem()) {
+                                        int newCount = slotStack.getCount() + output.getCount();
                                         if (newCount <= slotStack.getMaxStackSize()) {
                                             slotStack.setCount(newCount);
                                             itemHandler.setStackInSlot(k, slotStack);
@@ -356,6 +398,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         if (itemHandler.getStackInSlot(LICENCE_SLOT).isEmpty()) {
             return false;
         }
+        assert level != null;
         List<RecipeHolder<MarketRecipe>> recipes = level.getRecipeManager().getAllRecipesFor(MarketRecipe.Type.INSTANCE);
         for (int i = 0; i < recipes.size(); i++) {
             if (recipes.get(i).value().license().test(itemHandler.getStackInSlot(LICENCE_SLOT))) {
@@ -368,6 +411,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
     private RecipeHolder<MarketRecipe> getRandomRecipe(RandomSource random) {
         // Get all market recipes
+        assert level != null;
         List<RecipeHolder<MarketRecipe>> recipes = level.getRecipeManager().getAllRecipesFor(MarketRecipe.Type.INSTANCE);
 
         // getAllRecipesFor returns an immutable list, so make a new mutable list

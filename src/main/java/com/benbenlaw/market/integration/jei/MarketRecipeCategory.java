@@ -12,8 +12,11 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,11 +69,23 @@ public class MarketRecipeCategory implements IRecipeCategory<MarketRecipe>{
     public void setRecipe(IRecipeLayoutBuilder builder, MarketRecipe recipe, IFocusGroup focusGroup) {
 
         builder.addSlot(RecipeIngredientRole.CATALYST, 4, 2 ).addIngredients(recipe.license());
-        builder.addSlot(RecipeIngredientRole.INPUT, 40, 2).addIngredients(VanillaTypes.ITEM_STACK, Arrays.asList(recipe.input().getItems()))
-                .addTooltipCallback((variation, addTooltip) -> addTooltip.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN)));
+
+        if (recipe.inputWithNbt().getItem() != ItemStack.EMPTY.getItem()) {
+
+            ItemStack itemStack = new ItemStack(recipe.inputWithNbt().getItem(), recipe.inputWithNbt().getCount());
+            DataComponentMap components = recipe.inputWithNbt().getComponents();
+
+            itemStack.applyComponents(components);
+
+            builder.addSlot(RecipeIngredientRole.INPUT, 40, 2).addItemStack(itemStack)
+                    .addTooltipCallback((variation, addTooltip) -> addTooltip.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN)));
+
+        } else {
+            builder.addSlot(RecipeIngredientRole.INPUT, 40, 2).addIngredients(VanillaTypes.ITEM_STACK, Arrays.asList(recipe.input().getItems()))
+                    .addTooltipCallback((variation, addTooltip) -> addTooltip.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN)));
+
+        }
+
         builder.addSlot(RecipeIngredientRole.OUTPUT, 84, 2).addItemStack(recipe.output());
-
-
-
     }
 }

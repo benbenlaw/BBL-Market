@@ -1,0 +1,25 @@
+{
+  "type": "market:market",
+  "inputWithNbt": {
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:strength"
+      }
+    },
+    "count": 1,
+    "id": "minecraft:potion"
+  },
+  "output": {
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      }
+    },
+    "count": 1,
+    "id": "minecraft:potion"
+  },
+  "license": {
+    "item": "minecraft:paper"
+  },
+  "variation": 0
+}

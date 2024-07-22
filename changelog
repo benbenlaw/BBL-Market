@@ -1,5 +1,30 @@
 Changelog BBL Market
 
+1.0.4
+
+Tweaked recipes
+    input is now optional if you need specific items with components use "inputWithNbt"
+
+Example: This will only accept water bottles as input
+
+  "inputWithNbt": {
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:water"
+      }
+    },
+    "count": 1,
+    "id": "minecraft:potion"
+  }
+
+Allows for almost any item to be used as an input in whatever configuration you want
+Fully works with the the other recipes as well, just acts like an additional recipe
+Added to JEI and the screen render
+DataComponents now work on output items as well same as the new inputWithNbt way
+see nbt_test_10.json for an example of this
+
+
+
 1.0.3
 
 Added "market:license" tag mainly used to prevent incorrect items going into the license slots

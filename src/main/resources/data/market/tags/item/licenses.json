@@ -1,5 +1,6 @@
 {
   "values": [
-    "minecraft:paper"
+    "minecraft:paper",
+    "opolisutilities:log_sheet"
   ]
 }

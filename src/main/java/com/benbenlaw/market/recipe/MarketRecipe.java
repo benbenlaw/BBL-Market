@@ -5,15 +5,17 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.crafting.SizedIngredient;
 import org.jetbrains.annotations.NotNull;
 
-public record MarketRecipe(SizedIngredient input, Ingredient license, ItemStack output, int variation) implements Recipe<RecipeInput> {
+public record MarketRecipe(SizedIngredient input, ItemStack inputWithNbt, Ingredient license, ItemStack output, int variation) implements Recipe<RecipeInput> {
 
     @Override
     public @NotNull NonNullList<Ingredient> getIngredients() {
@@ -25,7 +27,7 @@ public record MarketRecipe(SizedIngredient input, Ingredient license, ItemStack 
     @Override
     public boolean matches(RecipeInput container, @NotNull Level level) {
         for (int i = 1; i <= 9; i++) {
-            if (input.test(container.getItem(i))) {
+            if (input.test(container.getItem(i)) || inputWithNbt.getItem() == container.getItem(i).getItem()) {
                 return true;
             }
         }
@@ -73,7 +75,8 @@ public record MarketRecipe(SizedIngredient input, Ingredient license, ItemStack 
 
         public final MapCodec<MarketRecipe> CODEC = RecordCodecBuilder.mapCodec(instance ->
                 instance.group(
-                        SizedIngredient.FLAT_CODEC.fieldOf("input").forGetter(MarketRecipe::input),
+                        SizedIngredient.FLAT_CODEC.optionalFieldOf("input", SizedIngredient.of(Items.AIR, 1)).forGetter(MarketRecipe::input),
+                        ItemStack.OPTIONAL_CODEC.optionalFieldOf("inputWithNbt", ItemStack.EMPTY).forGetter(MarketRecipe::inputWithNbt),
                         Ingredient.CODEC.fieldOf("license").forGetter(MarketRecipe::license),
                         ItemStack.CODEC.fieldOf("output").forGetter(MarketRecipe::output),
                         Codec.INT.fieldOf("variation").forGetter(MarketRecipe::variation)
@@ -94,14 +97,16 @@ public record MarketRecipe(SizedIngredient input, Ingredient license, ItemStack 
 
         private static MarketRecipe read(RegistryFriendlyByteBuf buffer) {
             SizedIngredient input = SizedIngredient.STREAM_CODEC.decode(buffer);
+            ItemStack inputWithNbt = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
             Ingredient license = Ingredient.CONTENTS_STREAM_CODEC.decode(buffer);
             ItemStack output = ItemStack.STREAM_CODEC.decode(buffer);
             int variation = buffer.readInt();
-            return new MarketRecipe(input, license, output, variation);
+            return new MarketRecipe(input, inputWithNbt, license, output, variation);
         }
 
         private static void write(RegistryFriendlyByteBuf buffer, MarketRecipe recipe) {
             SizedIngredient.STREAM_CODEC.encode(buffer, recipe.input);
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, recipe.inputWithNbt);
             Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.license);
             ItemStack.STREAM_CODEC.encode(buffer, recipe.output);
             buffer.writeInt(recipe.variation);
