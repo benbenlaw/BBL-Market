@@ -8,7 +8,6 @@ import com.benbenlaw.opolisutilities.util.inventory.IInventoryHandlingBlockEntit
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
@@ -246,6 +245,14 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     return itemHandler.getSlots();
                 }
             };
+
+            if (recipeID != ResourceLocation.parse("market:null") && currentRecipe == null) {
+                Optional<RecipeHolder<?>> recipe = level.getRecipeManager().byKey(recipeID);
+                if (recipe.isPresent()) {
+                    currentRecipe = (RecipeHolder<MarketRecipe>) recipe.get();
+                    needNewRecipe = false;
+                }
+            }
 
 
             if (!onCooldown) {
