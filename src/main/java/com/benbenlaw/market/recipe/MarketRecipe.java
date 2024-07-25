@@ -80,7 +80,7 @@ public record MarketRecipe(SizedIngredient input, ItemStack inputWithNbt, Ingred
                         Ingredient.CODEC.fieldOf("license").forGetter(MarketRecipe::license),
                         ItemStack.CODEC.fieldOf("output").forGetter(MarketRecipe::output),
                         Codec.INT.fieldOf("variation").forGetter(MarketRecipe::variation)
-                ).apply(instance, MarketRecipe::new));
+                ).apply(instance, Serializer::createMarketRecipe));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, MarketRecipe> STREAM_CODEC = StreamCodec.of(
                 MarketRecipe.Serializer::write, MarketRecipe.Serializer::read);
@@ -110,6 +110,9 @@ public record MarketRecipe(SizedIngredient input, ItemStack inputWithNbt, Ingred
             Ingredient.CONTENTS_STREAM_CODEC.encode(buffer, recipe.license);
             ItemStack.STREAM_CODEC.encode(buffer, recipe.output);
             buffer.writeInt(recipe.variation);
+        }
+        static MarketRecipe createMarketRecipe(SizedIngredient input, ItemStack inputWithNbt, Ingredient license, ItemStack output, int variation) {
+            return new MarketRecipe(input, inputWithNbt, license, output, variation);
         }
     }
 }

@@ -162,7 +162,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public void onLoad() {
         super.onLoad();
         this.setChanged();
+        System.out.println("onLoad - orderTimeRemaining: " + orderTimeRemaining); // Debug log
     }
+
     @Override
     public void handleUpdateTag(@NotNull CompoundTag compoundTag, HolderLookup.@NotNull Provider provider) {
         super.loadAdditional(compoundTag, provider);
@@ -211,6 +213,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         this.recipeID = ResourceLocation.parse(compoundTag.getString("recipeID"));
         orderVariation = compoundTag.getInt("orderVariation");
         orderTimeRemaining = compoundTag.getInt("orderTimeRemaining");
+
+
         super.loadAdditional(compoundTag, provider);
     }
 
@@ -223,8 +227,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         Containers.dropContents(this.level, this.worldPosition, inventory);
     }
 
-    public void tick() {
 
+    public void tick() {
         assert level != null;
         if (!level.isClientSide()) {
             sync();
@@ -232,7 +236,6 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             if (this.fakePlayer == null && level instanceof ServerLevel serverLevel) {
                 this.fakePlayer = createFakePlayer(serverLevel);
             }
-
 
             RecipeInput inventory = new RecipeInput() {
                 @Override
@@ -254,11 +257,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             }
 
-
             if (!onCooldown) {
                 if (needNewRecipe && hasValidLicense()) {
                     RandomSource random = RandomSource.create();
-                    //getRandomRecipe crashes if an invalid item is in the license slot. Don't call it without calling hasValidLicense first
                     currentRecipe = getRandomRecipe(random);
                     recipeID = ResourceLocation.parse(currentRecipe.toString());
 
@@ -266,8 +267,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     int variation = currentRecipe.value().variation();
                     orderVariation = random.nextIntBetweenInclusive(-variation, variation);
 
-                    orderTimeRemaining = 600;
-                    //30 seconds default, this can be changed to be in the recipe later on if we want more control over it
+                    orderTimeRemaining = 600; // 30 seconds default
                 }
 
                 if (currentRecipe == null) {
@@ -284,22 +284,25 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                         DataComponentMap dataComponentMapRecipe = currentRecipe.value().inputWithNbt().getComponents();
 
                         DataComponentMap dataComponentMapRecipeOutput = currentRecipe.value().output().getComponents();
-                        ItemStack output = currentRecipe.value().output();
+                        ItemStack output = new ItemStack(currentRecipe.value().output().getItem());
                         output.applyComponents(dataComponentMapRecipeOutput);
+
+                        /*
+                        System.out.println("output: " + output); // Debug log
+                        System.out.println("recipe: " + currentRecipe); // Debug log
+                        */
 
                         boolean isDataMapEqual = dataComponentMapInput.equals(dataComponentMapRecipe);
 
 
+                        //normal recipes
                         if (currentRecipe.value().input().test(inputStack) && !isDataMapEqual) {
                             if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
 
                                 itemHandler.getStackInSlot(i).shrink(currentRecipe.value().input().count() + orderVariation);
                                 needNewRecipe = true;
                                 itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
-                                //This allows a new order to be completed every single tick, maybe add some sort of
-                                //additional cooldown between orders to slow things down a little?
 
-                                //Recipe executing logic. You wrote this, thanks :)
                                 for (int k = 10; k <= 12; k++) {
                                     ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
                                     if (slotStack.isEmpty()) {
@@ -317,18 +320,14 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                             }
                         }
 
-
-
+                        //Recipes if the input has NBT data
                         else if (isDataMapEqual) {
                             if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
 
                                 itemHandler.getStackInSlot(i).shrink(currentRecipe.value().inputWithNbt().getCount() + orderVariation);
                                 needNewRecipe = true;
                                 itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
-                                //This allows a new order to be completed every single tick, maybe add some sort of
-                                //additional cooldown between orders to slow things down a little?
 
-                                //Recipe executing logic. You wrote this, thanks :)
                                 for (int k = 10; k <= 12; k++) {
                                     ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
                                     if (slotStack.isEmpty()) {
@@ -348,9 +347,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     }
                 }
             }
-
-            //State change logic between cooldown and usable
-            if(onCooldown) {
+            if (onCooldown) {
                 cooldownTimer--;
                 if (cooldownTimer <= 0) {
                     onCooldown = false;
@@ -365,6 +362,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             }
 
+            setChanged();
         }
     }
 

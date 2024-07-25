@@ -1,5 +1,11 @@
 Changelog BBL Market
 
+1.0.5
+
+fixed client world sync issue with the market saving int values
+tweaked the recipe class to use a new method for syncing the recipes from server to the client
+merged changes
+
 1.0.4
 
 Tweaked recipes
