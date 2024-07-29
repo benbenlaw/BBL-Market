@@ -1,0 +1,15 @@
+{
+  "type": "market:market",
+  "input": {
+    "count": 8,
+    "item": "minecraft:carrot"
+  },
+  "output": {
+    "count": 5,
+    "id": "opolisutilities:b_bucks"
+  },
+  "license": {
+    "item": "minecraft:diamond_sword"
+  },
+  "variation": 4
+}

@@ -1,5 +1,17 @@
 Changelog BBL Market
 
+1.0.6
+
+Removed market order timer, orders now stay until completed or the license expires
+Removed market cooldown
+Changed license damaging to be every X ticks (config to come), rather than on recipe completion
+Orders now vanish if the license item is removed
+Market GUI no longer shows time remaining or cooldown text
+Removed unused hasLicense method from MarketBlockEntity
+Extracted recipe completion logic into its own method completeRecipe, saves it being repeated with only a tiny change
+Added a new test recipe with a diamond sword as the license
+Cleaned up the use of currentRecipe and recipeID in MarketBlockEntity (now get set to null when not in use)
+
 1.0.5
 
 fixed client world sync issue with the market saving int values

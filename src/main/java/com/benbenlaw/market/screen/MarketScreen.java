@@ -69,48 +69,33 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
     }
 
     private void renderCooldown(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
+        Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
 
-        if (this.menu.blockEntity.onCooldown) {
-            guiGraphics.drawString(this.font, "On cooldown!", x + 69, y+ 45,
-                    0x3F3F3F, false);
-            guiGraphics.drawString(this.font, "Time left: " + (this.menu.blockEntity.cooldownTimer / 20) + "s", x+ 69, y+ 56,
-                    0x3F3F3F, false);
+        if (recipe.isPresent()) {
+            MarketRecipe r = (MarketRecipe) recipe.get().value();
 
-            guiGraphics.renderFakeItem(new ItemStack(Items.BARRIER), x + 76, y + 16);
+            //Render Input
 
-        }
-        else {
+            ItemStack itemInput;
 
-            Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
-
-            if (recipe.isPresent()) {
-                guiGraphics.drawString(this.font, "Time left: " + (this.menu.blockEntity.orderTimeRemaining / 20) + "s", x + 69, y + 45, 0x3F3F3F, false);
-                MarketRecipe r = (MarketRecipe) recipe.get().value();
-
-                //Render Input
-
-                ItemStack itemInput;
-
-                if (r.inputWithNbt().getItem() != ItemStack.EMPTY.getItem()) {
-                    itemInput = new ItemStack (r.inputWithNbt().getItem(), r.inputWithNbt().getCount() + this.menu.blockEntity.orderVariation);
-                    itemInput.applyComponents(r.inputWithNbt().getComponents());
-                } else {
-                    itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
-                }
-
-
-
-                guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
-                guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
-
-                //Render Output
-                ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
-                guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
-                guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
-
-
-
+            if (r.inputWithNbt().getItem() != ItemStack.EMPTY.getItem()) {
+                itemInput = new ItemStack (r.inputWithNbt().getItem(), r.inputWithNbt().getCount() + this.menu.blockEntity.orderVariation);
+                itemInput.applyComponents(r.inputWithNbt().getComponents());
+            } else {
+                itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
             }
+
+
+
+            guiGraphics.renderItemDecorations(this.font, itemInput, x + 76, y + 16);
+            guiGraphics.renderFakeItem(itemInput, x + 76, y + 15);
+
+            //Render Output
+            ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
+            guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
+            guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
+
+
 
         }
     }

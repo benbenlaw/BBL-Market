@@ -84,10 +84,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
     public ResourceLocation recipeID = ResourceLocation.parse("market:null");
     public int orderVariation;
-    public int orderTimeRemaining;
     public boolean needNewRecipe = true;
-    public boolean onCooldown;
-    public int cooldownTimer;
+    public int ticksSinceLastDamage;
 
     public int LICENCE_SLOT = 0;
     // INPUT_SLOTS= [1,2,3,4,5,6,7,8,9];
@@ -162,7 +160,6 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public void onLoad() {
         super.onLoad();
         this.setChanged();
-        System.out.println("onLoad - orderTimeRemaining: " + orderTimeRemaining); // Debug log
     }
 
     @Override
@@ -193,26 +190,26 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     protected void saveAdditional(@NotNull CompoundTag compoundTag, HolderLookup.@NotNull Provider provider) {
         super.saveAdditional(compoundTag, provider);
         compoundTag.put("inventory", this.itemHandler.serializeNBT(provider));
-        compoundTag.putInt("progress", progress);
-        compoundTag.putInt("maxProgress", maxProgress);
-        compoundTag.putBoolean("onCooldown", onCooldown);
-        compoundTag.putInt("cooldownTimer", cooldownTimer);
-        compoundTag.putString("recipeID", this.recipeID.toString());
+        if (recipeID != null) {
+            compoundTag.putString("recipeID", this.recipeID.toString());
+        } else {
+            compoundTag.putString("recipeID", "null");
+        }
         compoundTag.putInt("orderVariation", orderVariation);
-        compoundTag.putInt("orderTimeRemaining", orderTimeRemaining);
+        compoundTag.putInt("ticksSinceLastDamage", ticksSinceLastDamage);
 
     }
 
     @Override
     protected void loadAdditional(CompoundTag compoundTag, HolderLookup.@NotNull Provider provider) {
         this.itemHandler.deserializeNBT(provider, compoundTag.getCompound("inventory"));
-        progress = compoundTag.getInt("progress");
-        maxProgress = compoundTag.getInt("maxProgress");
-        onCooldown = compoundTag.getBoolean("onCooldown");
-        cooldownTimer = compoundTag.getInt("cooldownTimer");
-        this.recipeID = ResourceLocation.parse(compoundTag.getString("recipeID"));
+        if (compoundTag.getString("recipeID").equals("null")) {
+            recipeID = null;
+        } else {
+            this.recipeID = ResourceLocation.parse(compoundTag.getString("recipeID"));
+        }
         orderVariation = compoundTag.getInt("orderVariation");
-        orderTimeRemaining = compoundTag.getInt("orderTimeRemaining");
+        ticksSinceLastDamage = compoundTag.getInt("ticksSinceLastDamage");
 
 
         super.loadAdditional(compoundTag, provider);
@@ -227,12 +224,12 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         Containers.dropContents(this.level, this.worldPosition, inventory);
     }
 
-
     public void tick() {
         assert level != null;
         if (!level.isClientSide()) {
             sync();
 
+            //Create fake player to damage license item
             if (this.fakePlayer == null && level instanceof ServerLevel serverLevel) {
                 this.fakePlayer = createFakePlayer(serverLevel);
             }
@@ -249,7 +246,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             };
 
-            if (recipeID != ResourceLocation.parse("market:null") && currentRecipe == null) {
+            //Only used for loading a world, as currentRecipe cannot be set in loadAdditional
+            if (recipeID != null && currentRecipe == null) {
                 Optional<RecipeHolder<?>> recipe = level.getRecipeManager().byKey(recipeID);
                 if (recipe.isPresent()) {
                     currentRecipe = (RecipeHolder<MarketRecipe>) recipe.get();
@@ -257,35 +255,32 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             }
 
-            if (!onCooldown) {
-                if (needNewRecipe && hasValidLicense()) {
-                    RandomSource random = RandomSource.create();
-                    currentRecipe = getRandomRecipe(random);
-                    recipeID = ResourceLocation.parse(currentRecipe.toString());
+            if (needNewRecipe && hasValidLicense()) {
+                RandomSource random = RandomSource.create();
+                currentRecipe = getRandomRecipe(random);
+                recipeID = ResourceLocation.parse(currentRecipe.toString());
 
-                    needNewRecipe = false;
-                    int variation = currentRecipe.value().variation();
-                    orderVariation = random.nextIntBetweenInclusive(-variation, variation);
+                needNewRecipe = false;
+                int variation = currentRecipe.value().variation();
+                orderVariation = random.nextIntBetweenInclusive(-variation, variation);
+            }
 
-                    orderTimeRemaining = 600; // 30 seconds default
-                }
+            if (currentRecipe == null) {
+                return;
+            }
 
-                if (currentRecipe == null) {
-                    return;
-                }
+            for (int i = 1; i < 10; i++) {
+                if (!itemHandler.getStackInSlot(i).isEmpty()) {
+                    ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
+                    //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
+                    inputStack.setCount(inputStack.getCount() - orderVariation);
 
-                for (int i = 1; i < 10; i++) {
-                    if (!itemHandler.getStackInSlot(i).isEmpty()) {
-                        ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
-                        //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
-                        inputStack.setCount(inputStack.getCount() - orderVariation);
+                    DataComponentMap dataComponentMapInput = inputStack.getComponents();
+                    DataComponentMap dataComponentMapRecipe = currentRecipe.value().inputWithNbt().getComponents();
 
-                        DataComponentMap dataComponentMapInput = inputStack.getComponents();
-                        DataComponentMap dataComponentMapRecipe = currentRecipe.value().inputWithNbt().getComponents();
-
-                        DataComponentMap dataComponentMapRecipeOutput = currentRecipe.value().output().getComponents();
-                        ItemStack output = new ItemStack(currentRecipe.value().output().getItem());
-                        output.applyComponents(dataComponentMapRecipeOutput);
+                    DataComponentMap dataComponentMapRecipeOutput = currentRecipe.value().output().getComponents();
+                    ItemStack output = new ItemStack(currentRecipe.value().output().getItem(), currentRecipe.value().output().getCount());
+                    output.applyComponents(dataComponentMapRecipeOutput);
 
                         /*
                         System.out.println("output: " + output); // Debug log
@@ -297,72 +292,29 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
                         //normal recipes
                         if (currentRecipe.value().input().test(inputStack) && !isDataMapEqual) {
-                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
-
-                                itemHandler.getStackInSlot(i).shrink(currentRecipe.value().input().count() + orderVariation);
-                                needNewRecipe = true;
-                                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
-
-                                for (int k = 10; k <= 12; k++) {
-                                    ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
-                                    if (slotStack.isEmpty()) {
-                                        itemHandler.setStackInSlot(k, output);
-                                        break;
-                                    } else if (slotStack.getItem() == output.getItem()) {
-                                        int newCount = slotStack.getCount() + output.getCount();
-                                        if (newCount <= slotStack.getMaxStackSize()) {
-                                            slotStack.setCount(newCount);
-                                            itemHandler.setStackInSlot(k, slotStack);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                            completeRecipe(currentRecipe.value().input().count() + orderVariation, inventory, i, output);
                         }
 
                         //Recipes if the input has NBT data
                         else if (isDataMapEqual) {
-                            if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
-
-                                itemHandler.getStackInSlot(i).shrink(currentRecipe.value().inputWithNbt().getCount() + orderVariation);
-                                needNewRecipe = true;
-                                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
-
-                                for (int k = 10; k <= 12; k++) {
-                                    ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
-                                    if (slotStack.isEmpty()) {
-                                        itemHandler.setStackInSlot(k, output);
-                                        break;
-                                    } else if (slotStack.getItem() == output.getItem()) {
-                                        int newCount = slotStack.getCount() + output.getCount();
-                                        if (newCount <= slotStack.getMaxStackSize()) {
-                                            slotStack.setCount(newCount);
-                                            itemHandler.setStackInSlot(k, slotStack);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                            completeRecipe(currentRecipe.value().inputWithNbt().getCount(), inventory, i, output);
                         }
-                    }
-                }
-            }
-            if (onCooldown) {
-                cooldownTimer--;
-                if (cooldownTimer <= 0) {
-                    onCooldown = false;
-                    needNewRecipe = true;
-                }
-            } else if (recipeID != ResourceLocation.parse("market:null")) { //Checking the license slot prevents it from going on cooldown as soon as it's placed
-                orderTimeRemaining--;
-                if (orderTimeRemaining <= 0) {
-                    onCooldown = true;
-                    cooldownTimer = 600;
-                    recipeID = ResourceLocation.parse("market:null");
                 }
             }
 
-            setChanged();
+            //Damage the license if it's been a certain amount of time since the last damage
+            ticksSinceLastDamage++;
+            if (ticksSinceLastDamage >= 600 /*TODO: Change to config value please Ben thanks Ben idk how to do it*/) {
+                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
+                ticksSinceLastDamage = 0;
+            }
+
+            //Remove current order if the license slot is empty, whether by damage or by player intervention
+            if (itemHandler.getStackInSlot(LICENCE_SLOT).isEmpty()) {
+                currentRecipe = null;
+                recipeID = null;
+                needNewRecipe = true;
+            }
         }
     }
 
@@ -394,9 +346,27 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         return false;
     }
 
-    private boolean hasLicence(MarketBlockEntity entity, MarketRecipe recipe) {
-        Ingredient licence = recipe.license();
-        return licence.test(entity.itemHandler.getStackInSlot(LICENCE_SLOT));
+    private void completeRecipe(int inputCount, RecipeInput inventory, int slot, ItemStack output) {
+        if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
+
+            itemHandler.getStackInSlot(slot).shrink(inputCount + orderVariation);
+            needNewRecipe = true;
+
+            for (int k = 10; k <= 12; k++) {
+                ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
+                if (slotStack.isEmpty()) {
+                    itemHandler.setStackInSlot(k, output);
+                    break;
+                } else if (slotStack.getItem() == output.getItem()) {
+                    int newCount = slotStack.getCount() + output.getCount();
+                    if (newCount <= slotStack.getMaxStackSize()) {
+                        slotStack.setCount(newCount);
+                        itemHandler.setStackInSlot(k, slotStack);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private boolean hasValidLicense() {

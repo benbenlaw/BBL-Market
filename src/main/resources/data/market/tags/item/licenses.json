@@ -1,6 +1,7 @@
 {
   "values": [
     "minecraft:paper",
-    "opolisutilities:log_sheet"
+    "opolisutilities:log_sheet",
+    "minecraft:diamond_sword"
   ]
 }
