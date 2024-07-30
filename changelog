@@ -1,5 +1,13 @@
 Changelog BBL Market
 
+1.0.7
+
+Rewrote completeRecipe method to allow for output overflow
+Fixed a bug that emerged that caused the input to be consumed if its size wasn't greater than the variation
+(This emerged from isDataMapEqual evaluating to true if the input count was less than or equal to the variation,
+which in turn caused the old isDataMapEqual check to run completeRecipe when it shouldn't if the input test returned false)
+Removed canInsertItemIntoOutputSlot and hasOutputSpace (they were doing the same thing anyway?)
+
 1.0.6
 
 Removed market order timer, orders now stay until completed or the license expires

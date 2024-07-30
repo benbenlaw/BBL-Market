@@ -273,7 +273,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 if (!itemHandler.getStackInSlot(i).isEmpty()) {
                     ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
                     //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
-                    inputStack.setCount(inputStack.getCount() - orderVariation);
+                    inputStack.shrink(orderVariation);
 
                     DataComponentMap dataComponentMapInput = inputStack.getComponents();
                     DataComponentMap dataComponentMapRecipe = currentRecipe.value().inputWithNbt().getComponents();
@@ -282,23 +282,22 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     ItemStack output = new ItemStack(currentRecipe.value().output().getItem(), currentRecipe.value().output().getCount());
                     output.applyComponents(dataComponentMapRecipeOutput);
 
-                        /*
-                        System.out.println("output: " + output); // Debug log
-                        System.out.println("recipe: " + currentRecipe); // Debug log
-                        */
+                    /*
+                    System.out.println("output: " + output); // Debug log
+                    System.out.println("recipe: " + currentRecipe); // Debug log
+                    */
 
-                        boolean isDataMapEqual = dataComponentMapInput.equals(dataComponentMapRecipe);
+                    boolean isDataMapEqual = dataComponentMapInput.equals(dataComponentMapRecipe);
 
 
-                        //normal recipes
-                        if (currentRecipe.value().input().test(inputStack) && !isDataMapEqual) {
-                            completeRecipe(currentRecipe.value().input().count() + orderVariation, inventory, i, output);
+                    //normal recipes
+                    if (currentRecipe.value().input().test(inputStack)) {
+                        if (isDataMapEqual) {
+                            completeRecipe(currentRecipe.value().inputWithNbt().getCount() + orderVariation, i, output);
+                        } else {
+                            completeRecipe(currentRecipe.value().input().count() + orderVariation, i, output);
                         }
-
-                        //Recipes if the input has NBT data
-                        else if (isDataMapEqual) {
-                            completeRecipe(currentRecipe.value().inputWithNbt().getCount(), inventory, i, output);
-                        }
+                    }
                 }
             }
 
@@ -318,52 +317,45 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         }
     }
 
-    private boolean canInsertItemIntoOutputSlot(RecipeInput inventory, ItemStack output) {
-        for (int i = 10; i <= 12; i++) {
-            ItemStack slotStack = inventory.getItem(i);
-            if (slotStack.isEmpty() || (slotStack.getItem() == output.getItem() && slotStack.getCount() + output.getCount() <= slotStack.getMaxStackSize())) {
-                return true;
+    private void completeRecipe(int inputCount, int slot, ItemStack output) {
+        int outputCount = output.getCount();
+        int outputSpace = 0;
+
+        //Check if the output slots have enough space to hold the output, saves on extra checks later on
+        for (int k = 10; k <= 12; k++) {
+            if (itemHandler.getStackInSlot(k).isEmpty()) {
+                outputSpace += output.getMaxStackSize();
+            }
+            if (itemHandler.getStackInSlot(k).getItem() == output.getItem()) {
+                outputSpace += itemHandler.getStackInSlot(k).getMaxStackSize() - itemHandler.getStackInSlot(k).getCount();
             }
         }
-        return false;
-    }
 
-    private boolean hasOutputSpace(MarketBlockEntity entity, MarketRecipe recipe) {
-        ItemStack resultStack = recipe.getResultItem(Objects.requireNonNull(getLevel()).registryAccess());
+        if (outputSpace < outputCount) {
+            return;
+        }
 
         for (int i = 10; i <= 12; i++) {
-            ItemStack outputSlotStack = entity.itemHandler.getStackInSlot(i);
-            if (outputSlotStack.isEmpty()) {
-                if (resultStack.getCount() <= resultStack.getMaxStackSize()) {
-                    return true;
-                }
-            } else if (outputSlotStack.getItem() == resultStack.getItem()) {
-                if (outputSlotStack.getCount() + resultStack.getCount() <= outputSlotStack.getMaxStackSize()) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void completeRecipe(int inputCount, RecipeInput inventory, int slot, ItemStack output) {
-        if (canInsertItemIntoOutputSlot(inventory, currentRecipe.value().output()) && hasOutputSpace(this, currentRecipe.value())) {
-
-            itemHandler.getStackInSlot(slot).shrink(inputCount + orderVariation);
-            needNewRecipe = true;
-
-            for (int k = 10; k <= 12; k++) {
-                ItemStack slotStack = itemHandler.getStackInSlot(k).copy();
-                if (slotStack.isEmpty()) {
-                    itemHandler.setStackInSlot(k, output);
+            ItemStack outputSlot = itemHandler.getStackInSlot(i);
+            if (outputSlot.isEmpty()) {
+                if (outputCount <= output.getMaxStackSize()) {
+                    itemHandler.setStackInSlot(i, output.copy());
+                    itemHandler.getStackInSlot(slot).shrink(inputCount);
+                    needNewRecipe = true;
+                    //Only break when the output count reaches 0, otherwise move onto the next slot
                     break;
-                } else if (slotStack.getItem() == output.getItem()) {
-                    int newCount = slotStack.getCount() + output.getCount();
-                    if (newCount <= slotStack.getMaxStackSize()) {
-                        slotStack.setCount(newCount);
-                        itemHandler.setStackInSlot(k, slotStack);
-                        break;
-                    }
+                } else {
+                    itemHandler.setStackInSlot(i, new ItemStack(output.getItem(), output.getMaxStackSize()));
+                }
+            } else if (outputSlot.getItem() == output.getItem()) {
+                if (outputSlot.getCount() + outputCount <= outputSlot.getMaxStackSize()) {
+                    outputSlot.grow(outputCount);
+                    itemHandler.getStackInSlot(slot).shrink(inputCount);
+                    needNewRecipe = true;
+                    break;
+                } else {
+                    output.shrink(outputSlot.getMaxStackSize() - outputSlot.getCount());
+                    outputSlot.setCount(outputSlot.getMaxStackSize());
                 }
             }
         }
