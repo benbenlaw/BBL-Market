@@ -7,19 +7,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.common.crafting.SizedIngredient;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
@@ -63,12 +57,12 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         super.render(guiGraphics, mouseX, mouseY, partialTicks);
         renderProgressBars(guiGraphics);
         renderTooltip(guiGraphics, mouseX, mouseY);
-        renderCooldown(guiGraphics, mouseX, mouseY, x, y);
+        renderOrder(guiGraphics, mouseX, mouseY, x, y);
         renderCurrentRecipeInformationAboveArea(guiGraphics, mouseX, mouseY, x, y);
 
     }
 
-    private void renderCooldown(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
+    private void renderOrder(GuiGraphics guiGraphics, int mouseX, int mouseY, int x, int y) {
         Optional<RecipeHolder<?>> recipe = this.level.getRecipeManager().byKey(this.menu.blockEntity.recipeID);
 
         if (recipe.isPresent()) {
@@ -78,11 +72,11 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
 
             ItemStack itemInput;
 
-            if (r.inputWithNbt().getItem() != ItemStack.EMPTY.getItem()) {
-                itemInput = new ItemStack (r.inputWithNbt().getItem(), r.inputWithNbt().getCount() + this.menu.blockEntity.orderVariation);
+            if (!r.inputWithNbt().isEmpty()) {
+                itemInput = new ItemStack (r.inputWithNbt().getItem(), (int) ((r.inputWithNbt().getCount() + this.menu.blockEntity.orderVariation) / this.menu.blockEntity.demand));
                 itemInput.applyComponents(r.inputWithNbt().getComponents());
             } else {
-                itemInput = new ItemStack (r.input().getItems()[0].getItem(), r.input().count() + this.menu.blockEntity.orderVariation);
+                itemInput = new ItemStack (r.input().getItems()[0].getItem(), (int) ((r.input().count() + this.menu.blockEntity.orderVariation) / this.menu.blockEntity.demand));
             }
 
 
@@ -94,6 +88,8 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
             ItemStack itemOutput = new ItemStack (r.output().getItem(), r.output().getCount());
             guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
             guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
+
+            guiGraphics.drawString(this.font, "Demand: " + this.menu.blockEntity.demand, x + 69, y + 56, 0x3F3F3F, false);
 
 
 

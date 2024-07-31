@@ -10,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
@@ -30,7 +29,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -39,6 +37,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,6 +85,9 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public int orderVariation;
     public boolean needNewRecipe = true;
     public int ticksSinceLastDamage;
+    public int[] previousOrders = ArrayUtils.remove(new int[1], 0);
+    public double demand = 1;
+    public boolean useNBT = false;
 
     public int LICENCE_SLOT = 0;
     // INPUT_SLOTS= [1,2,3,4,5,6,7,8,9];
@@ -197,6 +199,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         }
         compoundTag.putInt("orderVariation", orderVariation);
         compoundTag.putInt("ticksSinceLastDamage", ticksSinceLastDamage);
+        compoundTag.putIntArray("previousOrders", previousOrders);
+        compoundTag.putDouble("demand", demand);
 
     }
 
@@ -210,6 +214,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
         }
         orderVariation = compoundTag.getInt("orderVariation");
         ticksSinceLastDamage = compoundTag.getInt("ticksSinceLastDamage");
+        previousOrders = compoundTag.getIntArray("previousOrders");
+        demand = compoundTag.getDouble("demand");
 
 
         super.loadAdditional(compoundTag, provider);
@@ -246,6 +252,45 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             };
 
+            //Damage the license if it's been a certain amount of time since the last damage
+            ticksSinceLastDamage++;
+            if (ticksSinceLastDamage >= 600 /*TODO: Change to config value please Ben thanks Ben idk how to do it*/) {
+                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
+                ticksSinceLastDamage = 0;
+            }
+
+            //Remove current order if the license slot is empty, whether by damage or by player intervention
+            if (itemHandler.getStackInSlot(LICENCE_SLOT).isEmpty()) {
+                currentRecipe = null;
+                recipeID = null;
+                needNewRecipe = true;
+            }
+
+            //Tick all previous order timers down, remove if at 0, and adjust demand accordingly
+            for (int i = previousOrders.length - 1; i >= 0; i--) {
+                previousOrders[i]--;
+                if (previousOrders[i] == 0) {
+                    previousOrders = ArrayUtils.remove(previousOrders, i);
+                    demand += 0.1;
+                    if (demand > 1) {
+                        demand = 1;
+                    }
+                }
+            }
+
+            //Recalculate demand with a grace period of 5 orders
+            if (previousOrders.length > 5) {
+                int gracePeriod = 0;
+                demand = 1;
+                for (int i : previousOrders) {
+                    if (gracePeriod < 5) {
+                        gracePeriod++;
+                    } else if (demand > 0.2) {
+                        demand -= 0.1;
+                    }
+                }
+            }
+
             //Only used for loading a world, as currentRecipe cannot be set in loadAdditional
             if (recipeID != null && currentRecipe == null) {
                 Optional<RecipeHolder<?>> recipe = level.getRecipeManager().byKey(recipeID);
@@ -265,11 +310,107 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 orderVariation = random.nextIntBetweenInclusive(-variation, variation);
             }
 
+
             if (currentRecipe == null) {
                 return;
             }
 
-            for (int i = 1; i < 10; i++) {
+            //Find what the input size needs to be to satisfy the order
+            int inputAmount;
+            if (currentRecipe.value().inputWithNbt().isEmpty()) {
+                inputAmount = (int) ((currentRecipe.value().input().count() + orderVariation) / demand);
+                useNBT = false;
+            } else {
+                inputAmount = (int) ((currentRecipe.value().inputWithNbt().getCount() + orderVariation) / demand);
+                useNBT = true;
+            }
+
+            //Getting the total amount of items that match the order, and their associated slots
+            int totalAmount = 0;
+            List<Integer> validSlots = new ArrayList<>();
+            if (!useNBT) {
+                for (int i = 1; i < 10; i++) {
+                    ItemStack slotStack = itemHandler.getStackInSlot(i);
+                    if (!slotStack.isEmpty()) {
+                        for (ItemStack itemStack : currentRecipe.value().input().getItems()) {
+                            if (itemStack.getItem() == slotStack.getItem()) {
+                                validSlots.add(i);
+                                totalAmount += slotStack.getCount();
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (int i = 0; i < 10; i++) {
+                    if (itemHandler.getStackInSlot(i).isEmpty() || itemHandler.getStackInSlot(i).getItem() != currentRecipe.value().inputWithNbt().getItem()) {
+                        continue;
+                    }
+
+                    DataComponentMap recipeComponents = currentRecipe.value().inputWithNbt().getComponents();
+                    DataComponentMap inputComponents = itemHandler.getStackInSlot(i).getComponents();
+                    if (recipeComponents.equals(inputComponents)) {
+                        validSlots.add(i);
+                        totalAmount += itemHandler.getStackInSlot(i).getCount();
+                    }
+                }
+            }
+
+            if (totalAmount < inputAmount) {
+                return;
+            }
+
+            //Get the total amount of space available to put the output and returning if it isn't enough
+            int outputSpace = 0;
+            for (int k = 10; k <= 12; k++) {
+                if (itemHandler.getStackInSlot(k).isEmpty()) {
+                    outputSpace += currentRecipe.value().output().getMaxStackSize();
+                } else if (itemHandler.getStackInSlot(k).getItem() == currentRecipe.value().output().getItem()) {
+                    outputSpace += itemHandler.getStackInSlot(k).getMaxStackSize() - itemHandler.getStackInSlot(k).getCount();
+                }
+            }
+
+            if (outputSpace < currentRecipe.value().output().getCount()) {
+                return;
+            }
+
+            //Consume input
+            for (int slot : validSlots) {
+                if (inputAmount > itemHandler.getStackInSlot(slot).getCount()) {
+                    inputAmount -= itemHandler.getStackInSlot(slot).getCount();
+                    itemHandler.setStackInSlot(slot, ItemStack.EMPTY);
+                } else {
+                    itemHandler.getStackInSlot(slot).shrink(inputAmount);
+                    inputAmount = 0;
+                }
+            }
+
+            //Add output
+            int outputAmount = currentRecipe.value().output().getCount();
+            for (int i = 10; i <= 12; i++) {
+                if (itemHandler.getStackInSlot(i).isEmpty()) {
+                    if (outputAmount <= currentRecipe.value().output().getMaxStackSize()) {
+                        itemHandler.setStackInSlot(i, new ItemStack(currentRecipe.value().output().getItem(), outputAmount));
+                        previousOrders = ArrayUtils.add(previousOrders, 600);
+                        needNewRecipe = true;
+                        break;
+                    } else {
+                        itemHandler.setStackInSlot(i, new ItemStack(currentRecipe.value().output().getItem(), currentRecipe.value().output().getMaxStackSize()));
+                    }
+                } else if (itemHandler.getStackInSlot(i).getItem() == currentRecipe.value().output().getItem()) {
+                    int slotSpace = itemHandler.getStackInSlot(i).getMaxStackSize() - itemHandler.getStackInSlot(i).getCount();
+                    if (outputAmount <= slotSpace) {
+                        itemHandler.getStackInSlot(i).grow(outputAmount);
+                        previousOrders = ArrayUtils.add(previousOrders, 600);
+                        needNewRecipe = true;
+                        break;
+                    } else {
+                        itemHandler.getStackInSlot(i).setCount(itemHandler.getStackInSlot(i).getMaxStackSize());
+                        outputAmount -= slotSpace;
+                    }
+                }
+            }
+
+            /*for (int i = 1; i < 10; i++) {
                 if (!itemHandler.getStackInSlot(i).isEmpty()) {
                     ItemStack inputStack = itemHandler.getStackInSlot(i).copy();
                     //Rather than changing the value in the recipe, we change the value that the recipe is checking itself again
@@ -285,7 +426,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     /*
                     System.out.println("output: " + output); // Debug log
                     System.out.println("recipe: " + currentRecipe); // Debug log
-                    */
+
 
                     boolean isDataMapEqual = dataComponentMapInput.equals(dataComponentMapRecipe);
 
@@ -299,21 +440,8 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                         }
                     }
                 }
-            }
+            }*/
 
-            //Damage the license if it's been a certain amount of time since the last damage
-            ticksSinceLastDamage++;
-            if (ticksSinceLastDamage >= 600 /*TODO: Change to config value please Ben thanks Ben idk how to do it*/) {
-                itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
-                ticksSinceLastDamage = 0;
-            }
-
-            //Remove current order if the license slot is empty, whether by damage or by player intervention
-            if (itemHandler.getStackInSlot(LICENCE_SLOT).isEmpty()) {
-                currentRecipe = null;
-                recipeID = null;
-                needNewRecipe = true;
-            }
         }
     }
 
@@ -342,6 +470,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     itemHandler.setStackInSlot(i, output.copy());
                     itemHandler.getStackInSlot(slot).shrink(inputCount);
                     needNewRecipe = true;
+                    previousOrders = ArrayUtils.add(previousOrders, 1200);
                     //Only break when the output count reaches 0, otherwise move onto the next slot
                     break;
                 } else {
@@ -352,6 +481,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     outputSlot.grow(outputCount);
                     itemHandler.getStackInSlot(slot).shrink(inputCount);
                     needNewRecipe = true;
+                    previousOrders = ArrayUtils.add(previousOrders, 1200);
                     break;
                 } else {
                     output.shrink(outputSlot.getMaxStackSize() - outputSlot.getCount());

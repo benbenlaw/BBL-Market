@@ -1,5 +1,10 @@
 Changelog BBL Market
 
+1.0.8
+
+Added demand system (old code is still there in case it doesn't work out as well as we thought)
+Market GUI now updates according to current demand
+
 1.0.7
 
 Rewrote completeRecipe method to allow for output overflow
