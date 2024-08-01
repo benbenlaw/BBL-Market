@@ -3,6 +3,7 @@ package com.benbenlaw.market.block;
 import com.benbenlaw.market.recipe.MarketRecipe;
 import com.benbenlaw.market.screen.MarketMenu;
 import com.benbenlaw.market.utils.ModTags;
+import com.benbenlaw.opolisutilities.block.entity.custom.OpolisBlockEntity;
 import com.benbenlaw.opolisutilities.block.entity.custom.handler.InputOutputItemHandler;
 import com.benbenlaw.opolisutilities.util.inventory.IInventoryHandlingBlockEntity;
 import com.mojang.authlib.GameProfile;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
+public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity, OpolisBlockEntity {
     private final ItemStackHandler itemHandler = new ItemStackHandler(13) {
         @Override
         protected void onContentsChanged(int slot) {

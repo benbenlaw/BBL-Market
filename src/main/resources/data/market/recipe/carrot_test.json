@@ -2,7 +2,7 @@
   "type": "market:market",
   "input": {
     "count": 5,
-    "item": "minecraft:apple"
+    "item": "minecraft:carrot"
   },
   "output": {
     "count": 20,

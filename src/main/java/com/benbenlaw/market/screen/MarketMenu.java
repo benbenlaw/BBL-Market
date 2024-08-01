@@ -3,6 +3,7 @@ package com.benbenlaw.market.screen;
 import com.benbenlaw.market.block.MarketBlockEntity;
 import com.benbenlaw.market.block.ModBlocks;
 import com.benbenlaw.market.utils.ModTags;
+import com.benbenlaw.opolisutilities.item.ModItems;
 import com.benbenlaw.opolisutilities.screen.slot.utils.BlacklistTagInputSlot;
 import com.benbenlaw.opolisutilities.screen.slot.utils.ModResultSlot;
 import com.benbenlaw.opolisutilities.screen.slot.utils.WhitelistTagInputSlot;
@@ -127,6 +128,10 @@ public class MarketMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(@NotNull Player player) {
+
+        if (player.getItemInHand(player.getUsedItemHand()).is(ModItems.PORTABLE_GUI))
+            return true;
+
         return stillValid(ContainerLevelAccess.create(player.level(), blockPos),
                 player, ModBlocks.MARKET.get());
     }

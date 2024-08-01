@@ -1,5 +1,11 @@
 Changelog BBL Market
 
+1.0.9
+
+Fixed version name being wrong
+Updated to opolis utils 4.4.0
+Market block now works with the Portable GUI from opolis utilities
+
 1.0.8
 
 Added demand system (old code is still there in case it doesn't work out as well as we thought)
@@ -24,6 +30,11 @@ Removed unused hasLicense method from MarketBlockEntity
 Extracted recipe completion logic into its own method completeRecipe, saves it being repeated with only a tiny change
 Added a new test recipe with a diamond sword as the license
 Cleaned up the use of currentRecipe and recipeID in MarketBlockEntity (now get set to null when not in use)
+
+1.0.6
+
+Fixed the market allowing basically any amount of items to be valid for the recipe
+Fixed the market not applying the correct count in the output (this was a bug from the nbt .applyComponents() method)
 
 1.0.5
 

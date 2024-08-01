@@ -3,18 +3,18 @@
   "inputWithNbt": {
     "components": {
       "minecraft:potion_contents": {
-        "potion": "minecraft:night_vision"
+        "potion": "minecraft:strength"
       }
     },
     "count": 1,
     "id": "minecraft:potion"
   },
   "output": {
-    "count": 2,
+    "count": 5,
     "id": "opolisutilities:b_bucks"
   },
   "license": {
-    "item": "minecraft:paper"
+    "item": "opolisutilities:log_sheet"
   },
   "variation": 0
 }
