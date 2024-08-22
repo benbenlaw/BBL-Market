@@ -51,8 +51,7 @@ public class Market {
     }
 
     private void addItemToCreativeTab(BuildCreativeModeTabContentsEvent event) {
-
-        if (event.getTabKey() == ModCreativeTab.OPOLIS_UTILITIES_TAB) {
+        if (event.getTab() == ModCreativeTab.OPOLIS_UTILITIES_TAB.get()) {
             event.accept(ModBlocks.MARKET.get());
         }
     }

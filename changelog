@@ -1,5 +1,19 @@
 Changelog BBL Market
 
+
+1.0.10
+
+WIP - go through all valid ingredients in demand in market gui
+WIP - JEI fix for variation
+Updated to opolis utils 4.5.5
+Updated to JEI 199
+Updated neoforge 21.0.166
+Fixed variation not being shown in JEI
+Fixed market not showing in JEI or creative, now back in with the opolis utilities tab
+Market now shows items in the demand list with there names and if necessary cycles through the valid items in the tag
+    tag now shows under the name of the item in the demand if the recipe is using a tag
+The market now allows for one item type per slot when used with automation
+
 1.0.9
 
 Fixed version name being wrong

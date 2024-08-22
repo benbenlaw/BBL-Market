@@ -29,6 +29,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
@@ -91,23 +92,65 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
     public boolean useNBT = false;
 
     public int LICENCE_SLOT = 0;
-    // INPUT_SLOTS= [1,2,3,4,5,6,7,8,9];
-    public int OUTPUT_SLOT_1 = 10;
-    public int OUTPUT_SLOT_2 = 11;
-    public int OUTPUT_SLOT_3 = 12;
 
     private final IItemHandler marketItemHandler = new InputOutputItemHandler(itemHandler,
             (i, stack) -> {
-                if (i >= 1 && i <= 9) {
-                    return !stack.getItem().asItem().getDefaultInstance().is(ModTags.LICENSES);
+                // Prevent input into output slots (10 to 12)
+                if (i >= 10 && i <= 12) {
+                    return false;
                 }
+
+                // Check if the slot index is within the range 1 to 9
+                if (i >= 1 && i <= 9) {
+                    Item itemToInsert = stack.getItem();
+
+                    // Check if the item is already inserted in any of the input slots (1 to 9)
+                    for (int slot = 1; slot <= 9; slot++) {
+                        ItemStack existingStack = itemHandler.getStackInSlot(slot);
+                        if (!existingStack.isEmpty() && existingStack.getItem() == itemToInsert) {
+                            // Item is already present in one of the slots
+                            if (i == slot) {
+                                // If the item is already in the same slot, allow insertion up to max stack size
+                                int maxStackSize = existingStack.getMaxStackSize();
+                                int currentStackSize = existingStack.getCount();
+                                int availableSpace = maxStackSize - currentStackSize;
+                                return stack.getCount() <= availableSpace;
+                            }
+                            return false; // Item is already in another slot
+                        }
+                    }
+
+                    // If the slot is empty or contains a different item
+                    if (itemHandler.getStackInSlot(i).isEmpty()) {
+                        // Allow insertion of the item up to its max stack size
+                        int maxStackSize = stack.getMaxStackSize();
+                        return stack.getCount() <= maxStackSize;
+                    }
+
+                    // Prevent insertion if the slot is occupied by a different item
+                    return false;
+                }
+
+                // Check if the slot index is 0
                 if (i == 0) {
+                    // Allow only license items
                     return stack.getItem().asItem().getDefaultInstance().is(ModTags.LICENSES);
                 }
+
+                // Prevent insertion into output slots (10 to 12) and any other slots not covered by above conditions
                 return false;
             },
             i -> i >= 10 && i <= 12
     );
+
+
+
+
+
+
+
+
+
 
 
     public @Nullable IItemHandler getItemHandlerCapability(@Nullable Direction side) {

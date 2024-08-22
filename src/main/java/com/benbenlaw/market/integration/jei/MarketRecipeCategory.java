@@ -3,9 +3,12 @@ package com.benbenlaw.market.integration.jei;
 import com.benbenlaw.market.Market;
 import com.benbenlaw.market.block.ModBlocks;
 import com.benbenlaw.market.recipe.MarketRecipe;
+import com.benbenlaw.opolisutilities.integration.jei.OpolisIRecipeSlotTooltipCallback;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -78,11 +81,22 @@ public class MarketRecipeCategory implements IRecipeCategory<MarketRecipe>{
             itemStack.applyComponents(components);
 
             builder.addSlot(RecipeIngredientRole.INPUT, 40, 2).addItemStack(itemStack)
-                    .addTooltipCallback((variation, addTooltip) -> addTooltip.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN)));
+                    .addTooltipCallback(new OpolisIRecipeSlotTooltipCallback() {
+                        @Override
+                        public void onRichTooltip(IRecipeSlotView iRecipeSlotView, ITooltipBuilder iTooltipBuilder) {
+                            iTooltipBuilder.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN));
+                        }
+                    });
 
         } else {
             builder.addSlot(RecipeIngredientRole.INPUT, 40, 2).addIngredients(VanillaTypes.ITEM_STACK, Arrays.asList(recipe.input().getItems()))
-                    .addTooltipCallback((variation, addTooltip) -> addTooltip.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN)));
+
+                    .addTooltipCallback(new OpolisIRecipeSlotTooltipCallback() {
+                        @Override
+                        public void onRichTooltip(IRecipeSlotView iRecipeSlotView, ITooltipBuilder iTooltipBuilder) {
+                            iTooltipBuilder.add(Component.literal("Variation: +/- " + recipe.variation()).withStyle(ChatFormatting.GREEN));
+                        }
+                    });
 
         }
 

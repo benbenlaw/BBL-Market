@@ -1,0 +1,15 @@
+{
+  "type": "market:market",
+  "input": {
+    "count": 5,
+    "tag": "minecraft:logs"
+  },
+  "output": {
+    "count": 13,
+    "id": "opolisutilities:b_bucks"
+  },
+  "license": {
+    "item": "minecraft:paper"
+  },
+  "variation": 4
+}
