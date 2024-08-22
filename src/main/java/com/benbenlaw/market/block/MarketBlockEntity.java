@@ -322,16 +322,11 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                 }
             }
 
-            //Recalculate demand with a grace period of 5 orders
-            if (previousOrders.length > 5) {
-                int gracePeriod = 0;
-                demand = 1;
-                for (int i : previousOrders) {
-                    if (gracePeriod < 5) {
-                        gracePeriod++;
-                    } else if (demand > 0.2) {
-                        demand -= 0.1;
-                    }
+            //Recalculate demand
+            if (previousOrders.length > 2) {
+                demand = 1 - (0.1 * (previousOrders.length / 3));
+                if (demand < 0.2) {
+                    demand = 0.2;
                 }
             }
 
