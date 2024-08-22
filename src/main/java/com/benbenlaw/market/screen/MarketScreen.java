@@ -89,7 +89,17 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
             guiGraphics.renderItemDecorations(this.font, itemOutput, x + 125, y + 16);
             guiGraphics.renderFakeItem(itemOutput, x + 125, y + 16);
 
-            guiGraphics.drawString(this.font, "Demand: " + this.menu.blockEntity.demand, x + 69, y + 56, 0x3F3F3F, false);
+            String demandToShow = String.valueOf(this.menu.blockEntity.demand);
+
+            if (this.menu.blockEntity.demand > 0.2 && this.menu.blockEntity.demand < 0.5) {
+                if (this.menu.blockEntity.demand > 0.3) {
+                    demandToShow = "0.4";
+                } else {
+                    demandToShow = "0.3";
+                }
+            }
+
+            guiGraphics.drawString(this.font, "Demand: " + demandToShow, x + 69, y + 56, 0x3F3F3F, false);
 
 
 

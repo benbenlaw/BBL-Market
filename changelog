@@ -1,5 +1,11 @@
 Changelog BBL Market
 
+1.0.10
+
+Raised minimum demand from 0.1 to 0.2
+Changed demand drop rate from every order after 5 to every 3 orders
+Fixed demand text showing too many decimal points for some values
+
 1.0.9
 
 Fixed version name being wrong
