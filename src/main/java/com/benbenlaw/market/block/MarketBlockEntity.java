@@ -358,9 +358,15 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             int inputAmount;
             if (currentRecipe.value().inputWithNbt().isEmpty()) {
                 inputAmount = (int) ((currentRecipe.value().input().count() + orderVariation) / demand);
+                if (inputAmount > currentRecipe.value().input().getItems()[0].getMaxStackSize()) {
+                    inputAmount = currentRecipe.value().input().getItems()[0].getMaxStackSize();
+                }
                 useNBT = false;
             } else {
                 inputAmount = (int) ((currentRecipe.value().inputWithNbt().getCount() + orderVariation) / demand);
+                if (inputAmount > currentRecipe.value().inputWithNbt().getMaxStackSize()) {
+                    inputAmount = currentRecipe.value().inputWithNbt().getMaxStackSize();
+                }
                 useNBT = true;
             }
 

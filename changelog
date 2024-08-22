@@ -1,5 +1,11 @@
 Changelog BBL Market
 
+1.0.11
+
+Increased minimum demand from 0.1 to 0.2 (part of 1.0.10)
+Changed the way demand is calculated, now reaches it's minimum in roughly twice the time (part of 1.0.10)
+Order sizes will no longer exceed a full stack per order
+Fixed demand being shown with far too many decimals for certain values
 
 1.0.10
 
