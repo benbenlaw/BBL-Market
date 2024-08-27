@@ -80,7 +80,13 @@ public class MarketScreen extends AbstractContainerScreen<MarketMenu> {
         if (recipe.isPresent()) {
             MarketRecipe r = (MarketRecipe) recipe.get().value();
 
-            List<ItemStack> validInputs = Arrays.asList(r.input().getItems());
+            List<ItemStack> validInputs;
+
+            if (r.inputWithNbt().isEmpty()) {
+                validInputs = Arrays.asList(r.input().getItems());
+            } else {
+                validInputs = List.of(r.inputWithNbt());
+            }
 
             // Check if validInputs is not empty before proceeding
             if (validInputs.isEmpty()) {

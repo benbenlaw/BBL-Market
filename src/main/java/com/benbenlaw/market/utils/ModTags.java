@@ -10,6 +10,7 @@ public class ModTags {
 
 
     public static final TagKey<Item> LICENSES = tag("licenses");
+    public static final TagKey<Item> NO_DEMAND = tag("no_demand");
 
     private static TagKey<Item> tag(String name) {
         return ItemTags.create(ResourceLocation.fromNamespaceAndPath(Market.MOD_ID, name));

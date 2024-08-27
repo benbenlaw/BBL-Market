@@ -1,5 +1,10 @@
 Changelog BBL Market
 
+1.0.12
+
+Added no_demand tag. Licenses with this tag will not reduce in demand regardless of orders completed
+Fixed Market GUI not showing an order if the input has specified NBT data
+
 1.0.11
 
 Increased minimum demand from 0.1 to 0.2 (part of 1.0.10)

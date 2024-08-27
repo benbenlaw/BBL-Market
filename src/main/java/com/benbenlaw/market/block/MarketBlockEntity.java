@@ -36,6 +36,7 @@ import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -323,11 +324,15 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
             }
 
             //Recalculate demand
-            if (previousOrders.length > 2) {
-                demand = 1 - (0.1 * (previousOrders.length / 3));
-                if (demand < 0.2) {
-                    demand = 0.2;
+            if (!itemHandler.getStackInSlot(LICENCE_SLOT).getItem().asItem().getDefaultInstance().is(ModTags.NO_DEMAND)) {
+                if (previousOrders.length > 2) {
+                    demand = 1 - (0.1 * (previousOrders.length / 3));
+                    if (demand < 0.2) {
+                        demand = 0.2;
+                    }
                 }
+            } else {
+                demand = 1;
             }
 
             //Only used for loading a world, as currentRecipe cannot be set in loadAdditional
