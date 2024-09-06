@@ -1,5 +1,9 @@
 Changelog BBL Market
 
+1.0.13
+
+Improved EMI integration, now show variation in recipes in EMI
+
 1.0.12
 
 Added no_demand tag. Licenses with this tag will not reduce in demand regardless of orders completed

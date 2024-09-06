@@ -102,6 +102,11 @@ dependencies {
     compileOnly "curse.maven:jei-238222:5606861"
     runtimeOnly "curse.maven:jei-238222:5606861"
 
+    //EMI
+
+    compileOnly "curse.maven:emi-580555:5619579"
+    runtimeOnly "curse.maven:emi-580555:5619579"
+
 
 }
 
