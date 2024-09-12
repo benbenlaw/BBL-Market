@@ -1,5 +1,12 @@
 Changelog BBL Market
 
+1.1.0
+
+Updated to latest version of Opolis Utils
+Fixed component recipes not working on  servers WIP
+Removed implementation of portable gui (handled in opolis utilities now)
+Moved testing recipes and tags into a different folder which prevents then from being loaded in the game
+
 1.0.13
 
 Improved EMI integration, now show variation in recipes in EMI

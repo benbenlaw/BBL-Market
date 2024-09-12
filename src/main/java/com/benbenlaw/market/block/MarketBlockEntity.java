@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity, OpolisBlockEntity {
+public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInventoryHandlingBlockEntity {
     private final ItemStackHandler itemHandler = new ItemStackHandler(13) {
         @Override
         protected void onContentsChanged(int slot) {

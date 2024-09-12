@@ -94,8 +94,8 @@ dependencies {
 
     //Opolis Utilities
 
-    compileOnly "curse.maven:opolis-utilities-649644:5608587"
-    runtimeOnly "curse.maven:opolis-utilities-649644:5608587"
+    compileOnly "curse.maven:opolis-utilities-649644:5710464"
+    runtimeOnly "curse.maven:opolis-utilities-649644:5710464"
 
     //JEI
 
