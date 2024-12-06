@@ -1,5 +1,6 @@
 package com.benbenlaw.market.block;
 
+import com.benbenlaw.market.config.ModConfig;
 import com.benbenlaw.market.recipe.MarketRecipe;
 import com.benbenlaw.market.screen.MarketMenu;
 import com.benbenlaw.market.utils.ModTags;
@@ -108,8 +109,14 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                     // Check if the item is already inserted in any of the input slots (1 to 9)
                     for (int slot = 1; slot <= 9; slot++) {
                         ItemStack existingStack = itemHandler.getStackInSlot(slot);
+
+                        // Prevent items with the LICENSES tag from being inserted
+                        if (itemToInsert.asItem().getDefaultInstance().is(ModTags.LICENSES)) {
+                            return false; // Item belongs to the LICENSES tag, prevent insertion
+                        }
+
+                        // Check if the item is already present in one of the slots (but not LICENSES)
                         if (!existingStack.isEmpty() && existingStack.getItem() == itemToInsert) {
-                            // Item is already present in one of the slots
                             if (i == slot) {
                                 // If the item is already in the same slot, allow insertion up to max stack size
                                 int maxStackSize = existingStack.getMaxStackSize();
@@ -120,6 +127,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
                             return false; // Item is already in another slot
                         }
                     }
+
 
                     // If the slot is empty or contains a different item
                     if (itemHandler.getStackInSlot(i).isEmpty()) {
@@ -299,7 +307,7 @@ public class MarketBlockEntity extends BlockEntity implements MenuProvider, IInv
 
             //Damage the license if it's been a certain amount of time since the last damage
             ticksSinceLastDamage++;
-            if (ticksSinceLastDamage >= 600 /*TODO: Change to config value please Ben thanks Ben idk how to do it*/) {
+            if (ticksSinceLastDamage >= ModConfig.ticksSinceLastDamage.get()) {
                 itemHandler.getStackInSlot(LICENCE_SLOT).hurtAndBreak(1, fakePlayer, fakePlayer.getEquipmentSlotForItem(ItemStack.EMPTY));
                 ticksSinceLastDamage = 0;
             }

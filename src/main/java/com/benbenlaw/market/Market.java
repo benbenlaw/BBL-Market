@@ -6,6 +6,7 @@ import com.benbenlaw.market.item.ModItems;
 import com.benbenlaw.market.recipe.ModRecipes;
 import com.benbenlaw.market.screen.MarketScreen;
 import com.benbenlaw.market.screen.ModMenuTypes;
+import com.benbenlaw.opolisutilities.config.ConfigFile;
 import com.benbenlaw.opolisutilities.item.ModCreativeTab;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Registry;
@@ -13,8 +14,10 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.client.CreativeModeTabSearchRegistry;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -29,6 +32,9 @@ public class Market {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public Market(IEventBus modEventBus) {
+
+        ModLoadingContext.get().getActiveContainer().registerConfig(ModConfig.Type.STARTUP, com.benbenlaw.market.config.ModConfig.SPEC, "bbl_market.toml");
+
 
         ModItems.register(modEventBus);
         ModBlocks.register(modEventBus);
