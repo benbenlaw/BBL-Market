@@ -1,5 +1,9 @@
 Changelog BBL Market
 
+1.1.1
+Tagged licence items can no longer be put into the input slots
+Added config to change the damage time of licences
+
 1.1.0
 
 Updated to latest version of Opolis Utils
